@@ -1825,8 +1825,13 @@ function wire(){
   var loanStart = $('loan-start');
   if(loanStart){
     loanStart.addEventListener('change', function(){
-      if(!loanStart.value) return;
-      state.loan.start = loanStart.value;
+      var v = String(loanStart.value || '').trim();
+      if(!/^\d{4}-\d{2}$/.test(v)){
+        loanStart.value = state.loan.start;
+        toast('시작 월은 YYYY-MM 형식으로 입력해 주세요 (예: 2026-12)');
+        return;
+      }
+      state.loan.start = v;
       saveState();
       renderLoan();
       toast('회차 일정을 다시 계산했어요');
