@@ -340,6 +340,22 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 .sync-chip[data-state="error"] .sync-dot{background:#e5483c}
 .sync-chip span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.25}}
+/* 상대방 변경 알림 배너 — 평상시에는 화면 밖 흐름 없이 숨겨 둔다(고정 위치라 레이아웃 영향 0) */
+.sync-notice{position:fixed;left:50%;top:76px;width:calc(100% - 24px);max-width:456px;z-index:70;
+  display:flex;align-items:flex-start;gap:10px;padding:12px 12px 12px 13px;
+  background:#fff;border:1px solid #cfe3ff;border-radius:16px;
+  box-shadow:0 14px 34px -16px rgba(17,24,39,.45),0 2px 8px rgba(17,24,39,.06);
+  opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,-10px);
+  transition:opacity .24s ease,transform .24s ease,visibility .24s ease}
+.sync-notice.show{opacity:1;visibility:visible;pointer-events:auto;transform:translate(-50%,0)}
+.sync-notice .sn-icon{width:30px;height:30px;border-radius:10px;background:#e9f2ff;display:grid;place-items:center;font-size:15px;flex:0 0 auto;margin-top:1px}
+.sync-notice .sn-body{flex:1;min-width:0}
+.sync-notice .sn-title{margin:0;font-size:13px;font-weight:800;color:var(--ink);letter-spacing:-.2px;line-height:1.4;overflow-wrap:anywhere}
+.sync-notice .sn-sub{margin:2px 0 0;font-size:11.5px;font-weight:600;color:var(--sub);line-height:1.5;overflow-wrap:anywhere}
+.sync-notice .sn-close{flex:0 0 auto;width:26px;height:26px;border:0;border-radius:50%;background:#f2f4f6;color:#8b95a1;
+  font-size:15px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0;margin-top:1px}
+.sync-notice .sn-close:active{background:#e5e8eb}
+.sync-notice:active{transform:translate(-50%,0) scale(.995)}
 .sync-room{display:flex;align-items:center;gap:8px;background:#f7f8fa;border-radius:14px;padding:10px 14px;margin:10px 0 8px}
 .sync-room span{font-size:12px;color:#8b95a1;font-weight:600;flex:0 0 auto}
 .sync-room strong{font-size:13px;font-weight:800;letter-spacing:-.2px;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -446,6 +462,16 @@ button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;f
       <span class="sync-dot" aria-hidden="true"></span><span id="sync-chip-label">이 기기에만 저장</span>
     </button>
   </header>
+
+  <!-- 상대방이 새 내역을 올렸을 때 잠깐 떠오르는 알림 배너 (평상시 숨김) -->
+  <div class="sync-notice" id="sync-notice" role="status" aria-live="polite" aria-hidden="true">
+    <span class="sn-icon" aria-hidden="true">🔔</span>
+    <div class="sn-body">
+      <p class="sn-title" id="sync-notice-title"></p>
+      <p class="sn-sub" id="sync-notice-sub"></p>
+    </div>
+    <button type="button" class="sn-close" id="sync-notice-close" aria-label="알림 닫기">×</button>
+  </div>
 
   <main>
     <!-- ============ 1. 한눈에 ============ -->
@@ -3556,7 +3582,8 @@ var sync = {
   pushTimer: null,
   pending: null,       /* 병합 선택을 기다리는 연결 정보 */
   note: '',
-  lastSyncAt: null
+  lastSyncAt: null,
+  lastFp: ''           /* 마지막으로 서버와 맞춘 state 지문 (다시 열었을 때 자동 반영 판단) */
 };
 
 var SYNC_LABEL = {
@@ -3688,6 +3715,122 @@ function syncHasData(s){
   if(s.loan && (s.loan.records || []).length) return true;
   if(s.mortgage && num(s.mortgage.principal) > 0) return true;
   return false;
+}
+
+/* ---- 상대방 변경 알림 배너 ----
+   - 내 clientId 가 아닌(=상대방) 변경을 반영했을 때만 띄운다.
+   - 이전 state 와 새 state 를 가볍게 비교해 '무엇이 바뀌었는지' 한 줄로 보여 준다.
+   - 고정 위치(position:fixed)라 숨겨져 있을 때 첫 화면 레이아웃·스크롤에 영향이 없다. */
+var SYNC_NOTICE_MS = 8000;
+var syncNoticeTimer = null;
+
+function syncNoticeVisible(){
+  var el = $('sync-notice');
+  return !!(el && el.classList.contains('show'));
+}
+function syncNoticeHide(){
+  if(syncNoticeTimer){ clearTimeout(syncNoticeTimer); syncNoticeTimer = null; }
+  var el = $('sync-notice');
+  if(!el) return;
+  el.classList.remove('show');
+  el.setAttribute('aria-hidden', 'true');
+}
+function syncNoticeShow(title, sub){
+  var el = $('sync-notice');
+  if(!el) return;
+  setText('sync-notice-title', title || '상대방이 가계부를 업데이트했어요');
+  var subEl = $('sync-notice-sub');
+  if(subEl){ subEl.textContent = sub || ''; subEl.hidden = !sub; }
+  /* 상단 배지 바로 아래에 붙인다 (스크롤해도 상단바는 고정) */
+  var bar = document.querySelector('.topbar');
+  var top = bar ? Math.round(bar.getBoundingClientRect().bottom) + 8 : 76;
+  el.style.top = Math.max(8, top) + 'px';
+  if(el.classList.contains('show')) el.classList.remove('show');
+  void el.offsetWidth;   /* 다시 띄울 때도 부드럽게 나타나도록 */
+  el.classList.add('show');
+  el.setAttribute('aria-hidden', 'false');
+  if(syncNoticeTimer) clearTimeout(syncNoticeTimer);
+  syncNoticeTimer = setTimeout(syncNoticeHide, SYNC_NOTICE_MS);
+}
+function syncIdMap(list){
+  var m = {};
+  (list || []).forEach(function(x){ if(x && x.id != null) m[String(x.id)] = x; });
+  return m;
+}
+function syncItemLabel(it){
+  var name = String((it && (it.memo || it.name || it.category)) || '').trim();
+  if(name.length > 16) name = name.slice(0, 16) + '…';
+  return name || '지출';
+}
+/* 항목 묶음별 지문(문자열) — 알림 요약 비교용 (syncFingerprint 와 같은 항목을 본다) */
+function syncSections(s){
+  s = s || {};
+  function amt(v){ return Math.round(num(v)); }
+  return {
+    savings: JSON.stringify((s.savings || []).map(function(x){ return [String(x.id || ''), String(x.owner || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; })),
+    fixed: JSON.stringify((s.fixed || []).map(function(x){ return [String(x.id || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; })),
+    transfers: JSON.stringify((s.transfers || []).map(function(t){ return [String(t.id || ''), String(t.day || ''), String(t.bank || ''), String(t.owner || ''), String(t.name || ''), amt(t.amount), !!t.done]; })),
+    loan: JSON.stringify(s.loan ? [String(s.loan.name || ''), amt(s.loan.total), amt(s.loan.monthly), amt(s.loan.rounds), String(s.loan.start || ''), String(s.loan.memo || ''), (s.loan.paid || []).map(Number).sort(function(a, b){ return a - b; }), (s.loan.records || []).map(function(r){ return [String(r.id || ''), String(r.date || ''), amt(r.amount), String(r.memo || '')]; })] : null),
+    mortgage: JSON.stringify(s.mortgage ? [String(s.mortgage.name || ''), amt(s.mortgage.principal), Math.round(num(s.mortgage.rate) * 100) / 100, String(s.mortgage.method || ''), amt(s.mortgage.months), String(s.mortgage.start || '')] : null),
+    extraLoans: JSON.stringify((s.extraLoans || []).map(function(e){ return [String(e.id || ''), String(e.name || ''), amt(e.amount), String(e.memo || '')]; })),
+    barn: amt(s.barn),
+    incomes: JSON.stringify((s.incomes || []).map(function(i){ return [String(i.id || ''), String(i.owner || ''), String(i.name || ''), amt(i.amount), String(i.memo || ''), String(i.date || '')]; })),
+    expenses: JSON.stringify((s.expenses || []).map(function(e){ return [String(e.id || ''), String(e.date || ''), String(e.category || ''), String(e.memo || ''), amt(e.amount)]; }))
+  };
+}
+function syncNoticeDiff(before, after){
+  before = before || {}; after = after || {};
+  var sb = syncSections(before), sa = syncSections(after);
+  var beMap = syncIdMap(before.expenses), aeMap = syncIdMap(after.expenses);
+  var biMap = syncIdMap(before.incomes), aiMap = syncIdMap(after.incomes);
+  var newExp = (after.expenses || []).filter(function(e){ return !beMap[String(e.id)]; });
+  var goneExp = Object.keys(beMap).filter(function(id){ return !aeMap[id]; }).length;
+  var newInc = (after.incomes || []).filter(function(i){ return !biMap[String(i.id)]; });
+  var goneInc = Object.keys(biMap).filter(function(id){ return !aiMap[id]; }).length;
+  var changes = [];
+  if(newInc.length) changes.push('입금 +' + newInc.length + '건');
+  if(goneInc) changes.push('입금 -' + goneInc + '건');
+  if(newExp.length) changes.push('지출 +' + newExp.length + '건');
+  if(goneExp) changes.push('지출 -' + goneExp + '건');
+  if(sb.savings !== sa.savings) changes.push('고정저축 변경');
+  if(sb.fixed !== sa.fixed) changes.push('고정지출 변경');
+  if(sb.transfers !== sa.transfers) changes.push('자동이체 변경');
+  if(sb.loan !== sa.loan) changes.push('회수금 변경');
+  if(sb.mortgage !== sa.mortgage || sb.extraLoans !== sa.extraLoans) changes.push('대출 변경');
+  if(sb.barn !== sa.barn) changes.push('곳간 변경');
+  var onlyNewExp = newExp.length > 0 && changes.length === 1;
+  var title = onlyNewExp ? '상대방이 새 지출을 기록했어요' : '상대방이 가계부를 업데이트했어요';
+  var sub = '';
+  if(newExp.length){
+    var head = syncItemLabel(newExp[0]) + ' ' + won(newExp[0].amount);
+    if(newExp.length > 1) head += ' 외 ' + (newExp.length - 1) + '건';
+    var rest = changes.filter(function(c){ return c !== '지출 +' + newExp.length + '건'; });
+    sub = rest.length ? head + ' · ' + rest.join(' · ') : head;
+  } else {
+    sub = changes.join(' · ');
+  }
+  if(!sub) sub = '방금 고친 내용이 있어요';
+  return { title: title, sub: syncNoticeLimit(sub), changes: changes, newExp: newExp };
+}
+/* 배너 한 줄이 너무 길어지지 않게 항목이 많으면 '외 N건'으로 줄인다 */
+function syncNoticeLimit(sub){
+  var parts = String(sub || '').split(' · ').filter(function(x){ return x; });
+  if(parts.length <= 3) return parts.join(' · ');
+  return parts.slice(0, 3).join(' · ') + ' 외 ' + (parts.length - 3) + '건';
+}
+/* 서버(방)에 있던 내용을 처음 불러왔을 때의 배너 문구 */
+function syncNoticeLoaded(before, after){
+  var diff = syncNoticeDiff(before, after);
+  var rest = diff.changes.slice();
+  var head = '';
+  if(diff.newExp.length){
+    head = syncItemLabel(diff.newExp[0]) + ' ' + won(diff.newExp[0].amount);
+    if(diff.newExp.length > 1) head += ' 외 ' + (diff.newExp.length - 1) + '건';
+    var ex = '지출 +' + diff.newExp.length + '건';
+    rest = rest.filter(function(c){ return c !== ex; });
+  }
+  var sub = [head].concat(rest).filter(function(x){ return x; }).join(' · ');
+  syncNoticeShow('서버의 가계부 내역을 불러왔어요', sub ? syncNoticeLimit(sub) : '두 분 폰이 같은 내용으로 맞춰졌어요');
 }
 function syncTime(v){
   if(v == null) return null;
@@ -3867,6 +4010,9 @@ function syncApplyRemote(raw){
     localStorage.setItem(LS_KEY, JSON.stringify(raw));
   }catch(err){}
   state = loadState();
+  /* 지금 이 폰 내용은 서버와 맞춰진 상태임을 기억해 둔다 */
+  sync.lastFp = syncFingerprint(state);
+  syncWriteStore({ lastFp: sync.lastFp, lastSyncAt: Date.now() });
   try{ renderAll(); }catch(err){}
   sync.applying = false;
 }
@@ -3901,7 +4047,8 @@ function syncPushNow(){
     rev: Date.now()
   };
   fs.setDoc(ref, payload).then(function(){
-    syncWriteStore({ lastSyncAt: Date.now() });
+    sync.lastFp = syncFingerprint(state);
+    syncWriteStore({ lastSyncAt: Date.now(), lastFp: sync.lastFp });
     sync.lastSyncAt = Date.now();
     if(sync.unsub) syncSetStatus(sync.status === 'error' ? 'error' : 'live');
     syncMsg('내 폰 가계부를 방에 저장했어요 · ' + syncClock());
@@ -3917,7 +4064,8 @@ function syncBegin(ctx, code, note){
   sync.code = code;
   sync.hash = ctx.hash;
   sync.db = (ctx.mod && ctx.mod.db) ? ctx.mod.db : null;
-  syncWriteStore({ enabled: true, code: code, hash: ctx.hash, connectedAt: Date.now() });
+  sync.lastFp = syncFingerprint(state);
+  syncWriteStore({ enabled: true, code: code, hash: ctx.hash, connectedAt: Date.now(), lastFp: sync.lastFp });
   if(ctx.mod && ctx.mod.fs) syncSubscribe(ctx);
   sync.lastSyncAt = Date.now();
   syncSetStatus('live');
@@ -3926,18 +4074,26 @@ function syncBegin(ctx, code, note){
   syncCloseSheet();
   toast('부부 실시간 동기화를 켰어요');
 }
+/* 방(서버) 문서 하나를 화면에 반영한다. 상대방(clientId 다름) 변경이면 알림 배너도 띄운다. */
+function syncOnRemoteDoc(d){
+  d = d || {};
+  var mine = !!d.clientId && d.clientId === sync.clientId;
+  if(!(d.state && !mine && syncFingerprint(d.state) !== syncFingerprint(state))) return false;
+  var before = state;
+  syncApplyRemote(d.state);
+  sync.lastSyncAt = syncTime(d.updatedAt) || Date.now();
+  syncMsg('상대방이 고친 내용을 반영했어요 · ' + syncClock());
+  var diff = syncNoticeDiff(before, d.state);
+  syncNoticeShow(diff.title, diff.sub);
+  return true;
+}
 function syncSubscribe(ctx){
   if(sync.unsub){ try{ sync.unsub(); }catch(err){} sync.unsub = null; }
   sync.unsub = ctx.mod.fs.onSnapshot(ctx.ref, { includeMetadataChanges: true }, function(snap){
     if(!snap.exists()) return;
     var d = snap.data() || {};
-    var mine = !!d.clientId && d.clientId === sync.clientId;
-    if(d.state && !mine && syncFingerprint(d.state) !== syncFingerprint(state)){
-      syncApplyRemote(d.state);
-      sync.lastSyncAt = syncTime(d.updatedAt) || Date.now();
-      syncMsg('상대방이 고친 내용을 반영했어요 · ' + syncClock());
-      toast('상대방이 고친 내용을 불러왔어요');
-    } else if(d.updatedAt){
+    var applied = syncOnRemoteDoc(d);
+    if(!applied && d.updatedAt){
       sync.lastSyncAt = syncTime(d.updatedAt) || sync.lastSyncAt;
     }
     if(sync.status !== 'error'){
@@ -3990,8 +4146,20 @@ function syncConnect(codeInput){
         return;
       }
       if(!syncHasData(state)){
+        var beforeEmpty = state;
         syncApplyRemote(serverState);
         syncBegin(ctx, code, '방에 있던 가계부를 이 폰으로 불러왔어요');
+        syncNoticeLoaded(beforeEmpty, serverState);
+        return;
+      }
+      /* 이 폰은 마지막 동기화 이후 바뀐 게 없다 → 상대방이 올린 최신 내용을 그대로 받는다
+         (앱을 닫아 둔 사이 상대방이 적은 내역이 있으면, 병합 선택 대신 바로 반영하고 알림 배너로 알려 준다) */
+      var lastFp = syncReadStore().lastFp || sync.lastFp || '';
+      if(lastFp && lastFp === syncFingerprint(state)){
+        var beforeSync = state;
+        syncApplyRemote(serverState);
+        syncBegin(ctx, code, '상대방이 올린 최신 내용을 불러왔어요');
+        syncNoticeLoaded(beforeSync, serverState);
         return;
       }
       syncShowMerge(ctx, code, serverState, serverAt);
@@ -4028,9 +4196,16 @@ function syncRetry(){
 function syncInit(){
   sync.clientId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   var store = syncReadStore();
-  if(store.code) sync.code = String(store.code);
+  if(store.code) sync.code = String(store.code).trim();
   if(store.hash) sync.hash = String(store.hash);
-  if(store.enabled) sync.enabled = true;
+  if(store.lastFp) sync.lastFp = String(store.lastFp);
+  /* 방 코드가 비었거나 너무 짧으면 '연결됨'으로 잘못 보이지 않게 꺼 둔다 */
+  if(store.enabled && syncNormalizeCode(sync.code).length >= SYNC_MIN_CODE){
+    sync.enabled = true;
+  }else if(store.enabled){
+    sync.enabled = false;
+    syncWriteStore({ enabled: false });
+  }
   syncUpdateUI();
   syncWire();
   if(sync.enabled && sync.code){
@@ -4074,6 +4249,14 @@ function syncWire(){
   if(pickL) pickL.addEventListener('click', syncPickLocal);
   var pickN = $('sync-merge-later');
   if(pickN) pickN.addEventListener('click', syncPickLater);
+  var notice = $('sync-notice');
+  if(notice){
+    notice.addEventListener('click', function(e){
+      var t = e.target;
+      if(t && t.id === 'sync-notice-close'){ e.stopPropagation(); syncNoticeHide(); return; }
+      syncNoticeHide();   /* 다음 터치로 부드럽게 닫힘 */
+    });
+  }
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape') syncCloseSheet();
   });
@@ -4098,7 +4281,29 @@ window.__hbSync = {
   state: function(){ return state; },
   showMerge: function(serverState, serverAt){ syncShowMerge({ mod: null, hash: 'test', ref: null }, 'test-room', serverState, serverAt || Date.now()); },
   applyRemote: syncApplyRemote,
-  minCode: SYNC_MIN_CODE
+  minCode: SYNC_MIN_CODE,
+  /* 알림 배너 검증용 (검증 스크립트에서 상대방 문서를 흘려 넣는다) */
+  clientId: function(){ return sync.clientId; },
+  remote: function(doc){ return syncOnRemoteDoc(doc); },
+  diff: syncNoticeDiff,
+  notice: function(){
+    var el = $('sync-notice');
+    var title = $('sync-notice-title'), sub = $('sync-notice-sub');
+    var cs = el ? getComputedStyle(el) : null;
+    return {
+      exists: !!el,
+      show: !!(el && el.classList.contains('show')),
+      title: title ? title.textContent : '',
+      sub: sub ? sub.textContent : '',
+      opacity: cs ? cs.opacity : '',
+      visibility: cs ? cs.visibility : '',
+      top: el ? Math.round(el.getBoundingClientRect().top) : -1,
+      hiddenAttr: el ? el.getAttribute('aria-hidden') : null
+    };
+  },
+  noticeHide: syncNoticeHide,
+  loaded: syncNoticeLoaded,
+  lastFp: function(){ return syncReadStore().lastFp || ''; }
 };
 
 /* =========================================================
