@@ -369,7 +369,16 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 .home-empty span{display:block;margin-top:6px;font-size:12.5px;color:var(--sub);line-height:1.55}
 .money-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
 .money-tile{background:rgba(255,255,255,.85);border-radius:14px;padding:10px 12px;min-width:0}
-.money-tile span{display:block;font-size:11.5px;color:var(--sub);font-weight:600;letter-spacing:-.2px}
+button.money-tile{display:block;width:100%;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:background .12s ease,transform .12s ease}
+button.money-tile:hover{background:#fff}
+button.money-tile:active{background:#eaf6f0;transform:scale(.985)}
+button.money-tile:focus-visible{outline:2px solid #3182f6;outline-offset:2px}
+.money-tile span{display:block;font-size:11.5px;color:var(--sub);font-weight:600;letter-spacing:-.2px;white-space:nowrap}
+button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;font-weight:700;color:#9aa3ad;opacity:.8}
+#income-card{scroll-margin-top:96px}
+@keyframes tileFlash{0%{box-shadow:0 0 0 3px rgba(49,130,246,.32)}70%{box-shadow:0 0 0 3px rgba(49,130,246,.12)}100%{box-shadow:0 0 0 3px rgba(49,130,246,0)}}
+#income-card.tile-flash{animation:tileFlash 1.4s ease-out}
 .money-tile strong{display:block;margin-top:3px;font-size:15px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .money-tile.final{grid-column:1 / -1;background:#fff;box-shadow:inset 0 0 0 1.5px #cfe6ff;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .money-tile.final span{font-size:12px}
@@ -460,10 +469,10 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
           <span>월급처럼 들어온 돈을 넣으면, 고정지출과 고정저축을 빼고 이번 달에 쓸 수 있는 돈이 여기에 나와요.</span>
         </div>
         <div class="money-grid">
-          <div class="money-tile"><span>들어온 돈</span><strong id="tile-income">0원</strong></div>
-          <div class="money-tile"><span>고정지출</span><strong id="tile-fixed">0원</strong></div>
-          <div class="money-tile"><span>고정저축</span><strong id="tile-savings">0원</strong></div>
-          <div class="money-tile"><span>쓴 돈</span><strong id="tile-var">0원</strong></div>
+          <button class="money-tile" type="button" data-tile="income" aria-label="들어온 돈 · 입금 내역 자세히 보기"><span>들어온 돈</span><strong id="tile-income">0원</strong></button>
+          <button class="money-tile" type="button" data-goto="fixed" aria-label="고정지출 · 상세 보기"><span>고정지출</span><strong id="tile-fixed">0원</strong></button>
+          <button class="money-tile" type="button" data-goto="savings" aria-label="고정저축 · 상세 보기"><span>고정저축</span><strong id="tile-savings">0원</strong></button>
+          <button class="money-tile" type="button" data-goto="variable" aria-label="쓴 돈 · 변동지출 내역 보기"><span>쓴 돈</span><strong id="tile-var">0원</strong></button>
           <div class="money-tile final" id="tile-final-box"><span>쓴 돈 빼고 남은 돈</span><strong id="tile-final">0원</strong></div>
         </div>
         <!-- 이전 버전 호환: 고정지출+저축 합계 타일(화면에는 보이지 않음) -->
@@ -2263,6 +2272,33 @@ function toggleMore(){
 }
 
 /* =========================================================
+   한눈에 첫 화면 4칸 타일 → 각 상세 화면으로 이동
+   들어온 돈 = '자세한 내역 · 설정 더보기'를 펼치고 입금 내역으로
+   고정지출 · 고정저축 · 쓴 돈 = 해당 탭으로
+   ========================================================= */
+function openTile(name){
+  if(name === 'income'){
+    expandMore();
+    var card = $('income-card');
+    if(!card) return;
+    var go = function(){
+      try{ card.scrollIntoView({block: 'start', behavior: 'smooth'}); }
+      catch(err){ window.scrollTo(0, Math.max(0, card.offsetTop - 96)); }
+      try{
+        card.classList.remove('tile-flash');
+        void card.offsetWidth;
+        card.classList.add('tile-flash');
+        setTimeout(function(){ card.classList.remove('tile-flash'); }, 1500);
+      }catch(err2){}
+      try{ card.setAttribute('tabindex', '-1'); card.focus({preventScroll: true}); }catch(err3){}
+    };
+    if(window.requestAnimationFrame) window.requestAnimationFrame(go); else go();
+    return;
+  }
+  switchTab(name);
+}
+
+/* =========================================================
    금액 입력 (콤마 자동 포맷)
    ========================================================= */
 function bindLiveAmount(input){
@@ -2822,6 +2858,9 @@ function wire(){
   });
   document.querySelectorAll('[data-goto]').forEach(function(b){
     b.addEventListener('click', function(){ switchTab(b.getAttribute('data-goto')); });
+  });
+  document.querySelectorAll('[data-tile]').forEach(function(b){
+    b.addEventListener('click', function(){ openTile(b.getAttribute('data-tile')); });
   });
 
   // 곳간
