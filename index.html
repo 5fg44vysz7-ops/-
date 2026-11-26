@@ -375,6 +375,34 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 .sheet .card-head{margin-bottom:8px}
 .sheet .btn.block{margin-top:2px}
 .sheet-foot{margin:12px 0 0;font-size:11px;color:#9aa3ad;line-height:1.68}
+/* ---------- 기준 달 칩 · 달 선택 시트 ---------- */
+.pill.month-pill{cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:2px;color:#1b64da;border-color:#bfd8ff;background:#f3f8ff}
+.pill.month-pill:active{background:#e3efff}
+.pill.month-pill.is-past{color:#4e5968;border-color:#e5e8eb;background:#fff}
+.pill.month-pill.is-future{color:#c25e14;border-color:#ffd9bf;background:#fff7f1}
+.mp-year{display:flex;align-items:center;justify-content:center;gap:12px;margin:4px 0 10px}
+.mp-year strong{font-size:16px;font-weight:800;letter-spacing:-.3px;min-width:76px;text-align:center;font-variant-numeric:tabular-nums}
+.mp-year-btn{width:34px;height:34px;border:1px solid #e5e8eb;background:#fff;border-radius:12px;color:#4e5968;font-size:16px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
+.mp-year-btn:active{background:#f2f4f6}
+.mp-year-btn:disabled{opacity:.32;cursor:default}
+.mp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.mp-cell{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 9px 8px;border:1px solid #edf0f3;background:#fafbfc;border-radius:14px;cursor:pointer;font-family:inherit;min-width:0;text-align:left}
+.mp-cell b{font-size:13px;font-weight:800;letter-spacing:-.2px;color:var(--ink);font-variant-numeric:tabular-nums}
+.mp-cell span{font-size:9.5px;font-weight:600;color:#8b95a1;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-cell.filled{border-color:#d9e5f7;background:#f7fbff}
+.mp-cell.current b::after{content:' •';color:var(--blue);font-size:11px}
+.mp-cell.future b{color:#9aa3ad}
+.mp-cell.active{background:var(--blue);border-color:var(--blue)}
+.mp-cell.active b,.mp-cell.active b::after{color:#fff}
+.mp-cell.active span{color:#e3efff}
+.mp-cell:active{transform:scale(.985)}
+.mp-summary{margin:11px 0 0;font-size:11.5px;font-weight:600;color:#4e5968;line-height:1.55;background:#f7f8fa;border-radius:12px;padding:9px 12px;overflow-wrap:anywhere}
+.mp-legend{margin:8px 0 0;font-size:10px;color:#9aa3ad;display:flex;align-items:center;gap:5px}
+.mp-legend .mp-dot{width:6px;height:6px;border-radius:3px;display:inline-block;background:var(--blue)}
+.mp-legend .mp-dot.has{background:#b9d5ff;margin-left:9px}
+.mp-quick{display:flex;gap:6px;margin-top:12px}
+.mp-quick .btn{flex:1;padding-left:6px;padding-right:6px;font-size:12px}
+.mp-sheet .btn.block{margin-top:8px}
 /* ---------- 초간단 첫 화면 (한눈에) ---------- */
 .home-hero{padding:16px 16px 14px}
 .hero-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -549,7 +577,7 @@ button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;f
         <p class="eyebrow">부부 공동 가계부</p>
         <h1 class="app-title">우리 집 살림</h1>
       </div>
-      <span class="pill" id="month-pill">이번 달</span>
+      <button type="button" class="pill month-pill" id="month-pill" aria-haspopup="dialog" aria-controls="month-sheet" aria-label="기준 달 바꾸기">이번 달 ▾</button>
     </div>
     <button type="button" class="sync-chip" id="sync-chip" data-state="off" aria-haspopup="dialog" aria-controls="sync-sheet">
       <span class="sync-dot" aria-hidden="true"></span><span id="sync-chip-label">이 기기에만 저장</span>
@@ -605,7 +633,7 @@ button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;f
 
       <!-- 2) 이번 달 우리 집 (3칸 요약 · 누르면 해당 탭) -->
       <div class="card home-month">
-        <div class="card-head"><h3 class="card-title">이번 달 우리 집</h3><span class="badge gray">눌러서 보기</span></div>
+        <div class="card-head"><h3 class="card-title" id="home-month-title">이번 달 우리 집</h3><span class="badge gray">눌러서 보기</span></div>
         <div class="month-grid">
           <button class="month-tile" type="button" data-goto="savings">
             <span class="mt-label">매달 모으는 돈</span>
@@ -656,7 +684,7 @@ button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;f
 
         <div class="card" id="flow-card">
           <div class="card-head">
-            <h3 class="card-title">이번 달 돈의 흐름</h3>
+            <h3 class="card-title" id="home-flow-title">이번 달 돈의 흐름</h3>
             <span class="badge gray">저축 · 고정 · 변동</span>
           </div>
           <p class="hint small" id="home-sub">고정지출 0원 · 변동지출 0원</p>
@@ -1132,6 +1160,35 @@ button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;f
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<!-- ============ 기준 달 선택 시트 (상단 '2026년 11월 ▾' 칩을 누르면 열림) ============ -->
+<div class="sheet-wrap" id="month-sheet" hidden>
+  <div class="sheet-backdrop" id="month-backdrop"></div>
+  <div class="sheet mp-sheet" id="month-panel" role="dialog" aria-modal="true" aria-labelledby="month-sheet-title" aria-describedby="month-sheet-desc">
+    <div class="sheet-grab"></div>
+    <div class="card-head">
+      <h3 class="card-title" id="month-sheet-title">달 선택</h3>
+      <span class="badge gray" id="month-sheet-badge">이번 달</span>
+    </div>
+    <p class="hint" id="month-sheet-desc">보고 싶은 달을 고르면 그 달의 <b>입금 · 변동지출 · 추가투자</b>가 열려요. <b>고정지출 · 고정저축 · 자동이체 · 회수금 · 대출</b>은 모든 달에 그대로 적용됩니다. 아직 오지 않은 다음 달도 미리 열어 예정 내역을 적어 둘 수 있어요.</p>
+    <div class="mp-year">
+      <button class="mp-year-btn" type="button" id="mp-year-prev" aria-label="이전 해">‹</button>
+      <strong id="month-year-label">2026년</strong>
+      <button class="mp-year-btn" type="button" id="mp-year-next" aria-label="다음 해">›</button>
+    </div>
+    <div class="mp-grid" id="mp-grid"></div>
+    <p class="mp-summary" id="month-summary">이번 달 기록을 불러오는 중이에요</p>
+    <p class="mp-legend"><span class="mp-dot"></span>이번 달 · 점이 있으면 지금 보고 있는 달</p>
+    <div class="mp-quick">
+      <button class="btn ghost small" type="button" id="mp-prev" data-month="">‹ 지난 달</button>
+      <button class="btn ghost small" type="button" id="mp-next" data-month="">다음 달 ›</button>
+    </div>
+    <button class="btn primary small block" type="button" id="mp-start" data-month="">다음 달 미리 보기 · 새 달 시작</button>
+    <button class="btn ghost small block" type="button" id="mp-today" data-month="" hidden>이번 달로 돌아가기</button>
+    <button class="btn ghost small block" type="button" id="mp-close">닫기</button>
+    <p class="sheet-foot">지난 달 · 지난 해 기록도 이 기기와 부부 동기화 방에 함께 보관돼요. 이 달 선택에서 다시 열어 확인하거나 고칠 수 있습니다.</p>
+  </div>
+</div>
+
 <div class="sheet-wrap" id="sync-sheet" hidden>
   <div class="sheet-backdrop" id="sync-backdrop"></div>
   <div class="sheet" id="sync-panel" role="dialog" aria-modal="true" aria-labelledby="sync-sheet-title" aria-describedby="sync-sheet-desc">
@@ -1211,6 +1268,8 @@ var DEFAULT_STATE = {
   mortgage: clone(MG_DEFAULTS),
   extraLoans: [],
   barn: 0,
+  activeMonth: '',
+  monthlyRecords: {},
   incomes: [],
   nuga: null,
   extraInvestments: [],
@@ -1220,12 +1279,100 @@ var DEFAULT_STATE = {
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
 function num(v){ var n = Number(String(v == null ? '' : v).replace(/[^0-9.\-]/g,'')); return isFinite(n) ? n : 0; }
 
+/* =========================================================
+   달(연도·월)별 보관 — 입금 · 변동지출 · 추가투자만 달마다 따로
+   ========================================================= */
+function curYm(){
+  var d = new Date();
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1);
+}
+function isYmKey(v){ return /^\d{4}-(0[1-9]|1[0-2])$/.test(String(v || '')); }
+function emptyMonthRec(){ return {incomes: [], expenses: [], extraInvestments: [], transferDone: {}}; }
+function monthLabel(ym){
+  if(!isYmKey(ym)) return '';
+  return ym.slice(0, 4) + '년 ' + Number(ym.slice(5, 7)) + '월';
+}
+function normIncome(it, i){
+  return {
+    id: String(it.id || 'i' + (i + 1)),
+    owner: String(it.owner || '공동').slice(0, 12),
+    name: String(it.name || '입금').slice(0, 24),
+    amount: Math.max(0, Math.round(num(it.amount))),
+    memo: String(it.memo || '').slice(0, 40),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : ''
+  };
+}
+function normExpense(e, i){
+  return {
+    id: String(e.id || uid()),
+    date: String(e.date || ''),
+    category: CATEGORIES.indexOf(e.category) >= 0 ? e.category : '기타',
+    memo: String(e.memo || ''),
+    amount: Math.max(0, num(e.amount))
+  };
+}
+function normXi(it, i){
+  return {
+    id: String(it.id || 'xi' + (i + 1)),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : '',
+    name: String(it.name || '추가투자').slice(0, 20),
+    amount: Math.max(0, Math.round(num(it.amount))),
+    memo: String(it.memo || '').slice(0, 30)
+  };
+}
+function normList(list, fn){
+  if(!Array.isArray(list)) return [];
+  var out = [];
+  list.forEach(function(x, i){ if(x && typeof x === 'object') out.push(fn(x, i)); });
+  return out;
+}
+/* state 에 activeMonth · monthlyRecords 를 채우고, 지금 달 배열을 그 달 기록과 같은 배열로 맞춘다.
+   - 지금 달(state.incomes · expenses · extraInvestments)이 그 달 기록의 기준이다(고친·지운 것이 그대로 반영).
+   - 다른 달은 monthlyRecords 에 있는 그대로 보관한다. */
+function monthlyNormalize(base, raw){
+  raw = (raw && typeof raw === 'object') ? raw : {};
+  var records = {};
+  var src = raw.monthlyRecords;
+  if(src && typeof src === 'object'){
+    Object.keys(src).forEach(function(k){
+      if(!isYmKey(k)) return;
+      var r = src[k];
+      if(!r || typeof r !== 'object') return;
+      var rec = emptyMonthRec();
+      rec.incomes = normList(r.incomes, normIncome);
+      rec.expenses = normList(r.expenses, normExpense);
+      rec.extraInvestments = normList(r.extraInvestments, normXi).filter(function(x){ return x.amount > 0; });
+      if(r.transferDone && typeof r.transferDone === 'object'){
+        Object.keys(r.transferDone).forEach(function(id){ if(r.transferDone[id]) rec.transferDone[String(id)] = true; });
+      }
+      records[k] = rec;
+    });
+  }
+  var am = isYmKey(raw.activeMonth) ? raw.activeMonth : curYm();
+  if(!records[am]) records[am] = emptyMonthRec();
+  var rec = records[am];
+  /* 예전 버전(월별 보관 전) 데이터는 지금 달 기록으로 그대로 옮겨 담는다(잃는 내역 0건) */
+  rec.incomes = Array.isArray(base.incomes) ? base.incomes : [];
+  rec.expenses = Array.isArray(base.expenses) ? base.expenses : [];
+  rec.extraInvestments = Array.isArray(base.extraInvestments) ? base.extraInvestments : [];
+  var dm = {};
+  (base.transfers || []).forEach(function(t){ if(t.done) dm[String(t.id)] = true; });
+  rec.transferDone = dm;
+  base.activeMonth = am;
+  base.monthlyRecords = records;
+  base.incomes = rec.incomes;
+  base.expenses = rec.expenses;
+  base.extraInvestments = rec.extraInvestments;
+  (base.transfers || []).forEach(function(t){ t.done = !!rec.transferDone[String(t.id)]; });
+  return base;
+}
+
 function loadState(){
   try{
     var raw = localStorage.getItem(LS_KEY);
-    if(!raw) return clone(DEFAULT_STATE);
+    if(!raw) return monthlyNormalize(clone(DEFAULT_STATE), null);
     var s = JSON.parse(raw);
-    if(!s || typeof s !== 'object') return clone(DEFAULT_STATE);
+    if(!s || typeof s !== 'object') return monthlyNormalize(clone(DEFAULT_STATE), null);
     var base = clone(DEFAULT_STATE);
     if(Array.isArray(s.savings)){ base.savings = s.savings.map(function(it, i){ return {id: it.id || 's'+(i+1), owner: it.owner || '공동', name: it.name || '저축', memo: it.memo || '', amount: Math.max(0, num(it.amount))}; }); }
     if(Array.isArray(s.fixed)){ base.fixed = s.fixed.map(function(it, i){ return {id: it.id || 'f'+(i+1), name: it.name || '지출', memo: it.memo || '', amount: Math.max(0, num(it.amount))}; }); }
@@ -1293,44 +1440,22 @@ function loadState(){
     }
     base.barn = Math.max(0, num(s.barn));
     /* incomes(입금)는 나중에 추가된 키 — 없는 예전 .json 파일도 오류 없이 []로 불러온다 */
-    base.incomes = [];
-    if(Array.isArray(s.incomes)){
-      base.incomes = s.incomes.filter(function(it){ return it && typeof it === 'object'; }).map(function(it, i){
-        return {
-          id: String(it.id || 'i' + (i + 1)),
-          owner: String(it.owner || '공동').slice(0, 12),
-          name: String(it.name || '입금').slice(0, 24),
-          amount: Math.max(0, Math.round(num(it.amount))),
-          memo: String(it.memo || '').slice(0, 40),
-          date: /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : ''
-        };
-      });
-    }
+    base.incomes = normList(s.incomes, normIncome);
     /* extraInvestments(추가투자)도 나중에 추가된 키 — 없는 예전 .json 파일은 []로 읽는다 */
-    base.extraInvestments = [];
-    if(Array.isArray(s.extraInvestments)){
-      base.extraInvestments = s.extraInvestments.filter(function(it){ return it && typeof it === 'object'; }).map(function(it, i){
-        return {
-          id: String(it.id || 'xi' + (i + 1)),
-          date: /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : '',
-          name: String(it.name || '추가투자').slice(0, 20),
-          amount: Math.max(0, Math.round(num(it.amount))),
-          memo: String(it.memo || '').slice(0, 30)
-        };
-      }).filter(function(it){ return it.amount > 0; });
-    }
-    if(Array.isArray(s.expenses)) base.expenses = s.expenses.filter(function(e){ return e && typeof e === 'object'; }).map(function(e){ return {id: String(e.id || uid()), date: String(e.date || ''), category: CATEGORIES.indexOf(e.category) >= 0 ? e.category : '기타', memo: String(e.memo || ''), amount: Math.max(0, num(e.amount))}; });
+    base.extraInvestments = normList(s.extraInvestments, normXi).filter(function(it){ return it.amount > 0; });
+    base.expenses = normList(s.expenses, normExpense);
     /* nuga(누가 분석)는 나중에 추가된 키 — 없는 예전 파일은 null(빈 상태)로 읽는다 */
     base.nuga = normalizeNuga(s.nuga);
-    return base;
+    return monthlyNormalize(base, s);
   }catch(err){
-    return clone(DEFAULT_STATE);
+    return monthlyNormalize(clone(DEFAULT_STATE), null);
   }
 }
 
 var state = loadState();
 
 function saveState(){
+  try{ flushMonth(); }catch(err){}
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(err){ /* 저장 불가 시 조용히 넘어감 */ }
   /* 부부 실시간 동기화가 연결되어 있으면 디바운스 후 Firestore에 올린다 */
   if(sync.enabled && sync.db && sync.unsub && !sync.applying) syncQueuePush();
@@ -1391,6 +1516,244 @@ function ymLabel(ym, short){
   var p = String(ym).split('-');
   if(p.length < 2) return '';
   return short ? p[0].slice(2) + '.' + p[1] : p[0] + '년 ' + Number(p[1]) + '월';
+}
+
+/* =========================================================
+   달 기록 다루기 · 달 바꾸기
+   ========================================================= */
+function monthRecords(){ return state.monthlyRecords || (state.monthlyRecords = {}); }
+
+/* 지금 보고 있는 달의 배열을 그 달 기록에 그대로 묶는다(배열을 새로 만들지 않으므로 이후 push가 바로 저장된다) */
+function flushMonth(){
+  var am = isYmKey(state.activeMonth) ? state.activeMonth : (state.activeMonth = curYm());
+  var all = monthRecords();
+  var rec = all[am] || (all[am] = emptyMonthRec());
+  rec.incomes = Array.isArray(state.incomes) ? state.incomes : [];
+  rec.expenses = Array.isArray(state.expenses) ? state.expenses : [];
+  rec.extraInvestments = Array.isArray(state.extraInvestments) ? state.extraInvestments : [];
+  var dm = {};
+  (state.transfers || []).forEach(function(t){ if(t.done) dm[String(t.id)] = true; });
+  rec.transferDone = dm;
+  return rec;
+}
+
+/* 고른 달의 기록을 화면 상태로 올린다(고정지출 · 고정저축 · 회수금 · 대출은 그대로) */
+function useMonth(ym){
+  var all = monthRecords();
+  var rec = all[ym] || (all[ym] = emptyMonthRec());
+  state.activeMonth = ym;
+  state.incomes = rec.incomes || (rec.incomes = []);
+  state.expenses = rec.expenses || (rec.expenses = []);
+  state.extraInvestments = rec.extraInvestments || (rec.extraInvestments = []);
+  var dm = rec.transferDone || {};
+  (state.transfers || []).forEach(function(t){ t.done = !!dm[String(t.id)]; });
+  return rec;
+}
+
+function monthInfo(ym){
+  var r = (ym === state.activeMonth) ? flushMonth() : monthRecords()[ym];
+  var inc = (r && r.incomes) || [], exp = (r && r.expenses) || [], xi = (r && r.extraInvestments) || [];
+  function sum(list){ return list.reduce(function(a, b){ return a + num(b.amount); }, 0); }
+  return {
+    incomes: inc.length, expenses: exp.length, extraInvestments: xi.length,
+    items: inc.length + exp.length + xi.length,
+    inc: sum(inc), exp: sum(exp), xi: sum(xi)
+  };
+}
+function monthShortLabel(ym){ return ymLabel(ym, true); }
+function monthWord(ym){
+  if(!isYmKey(ym)) return '이번 달';
+  if(ym === curYm()) return '이번 달';
+  return Number(ym.slice(5, 7)) + '월';
+}
+
+/* 새 지출·입금·추가투자 기본 날짜: 이번 달이면 오늘, 다른 달이면 그 달의 같은 날(없는 날은 말일) */
+function monthDefaultDate(ym){
+  var today = todayISO();
+  if(!isYmKey(ym) || ym === today.slice(0, 7)) return today;
+  var day = Number(today.slice(8, 10));
+  var last = new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 0).getDate();
+  return ym + '-' + pad2(Math.min(day, last));
+}
+function updateMonthDates(){
+  var d = monthDefaultDate(state.activeMonth);
+  ['ex-date', 'income-date', 'xi-date', 'loan-rec-date'].forEach(function(id){
+    var el = $(id);
+    if(el) el.value = d;
+  });
+}
+
+/* 상단 칩 · 첫 화면 제목을 지금 보고 있는 달에 맞춘다 */
+function syncMonthUI(){
+  var am = isYmKey(state.activeMonth) ? state.activeMonth : curYm();
+  var cur = curYm();
+  var pill = $('month-pill');
+  if(pill){
+    pill.textContent = monthLabel(am) + ' ▾';
+    pill.setAttribute('aria-label', monthLabel(am) + ' 기준 · 눌러서 달 바꾸기');
+    pill.classList.toggle('is-past', am < cur);
+    pill.classList.toggle('is-future', am > cur);
+  }
+  var monthTitle = $('home-month-title');
+  if(monthTitle) monthTitle.textContent = monthWord(am) + ' 우리 집';
+  var emptySpan = document.querySelector('#spare-empty span');
+  if(emptySpan) emptySpan.textContent = '월급처럼 들어온 돈을 넣으면, 고정지출과 고정저축을 빼고 ' + monthWord(am) + '에 쓸 수 있는 돈이 여기에 나와요.';
+  var flowTitle = $('home-flow-title');
+  if(flowTitle) flowTitle.textContent = monthWord(am) + ' 돈의 흐름';
+}
+
+/* 날짜(YYYY-MM-DD)가 속한 달. 날짜가 없으면 지금 보고 있는 달 */
+function ymOfDate(date, fallback){
+  var k = String(date || '').slice(0, 7);
+  return isYmKey(k) ? k : (isYmKey(fallback) ? fallback : state.activeMonth);
+}
+/* 새 항목을 그 날짜가 속한 달에 넣는다(다른 달 날짜로 적어도 그 달 기록으로 들어간다) */
+function pushMonthItem(key, item, ym){
+  var target = isYmKey(ym) ? ym : state.activeMonth;
+  var all = monthRecords();
+  var rec = all[target] || (all[target] = emptyMonthRec());
+  if(!Array.isArray(rec[key])) rec[key] = [];
+  rec[key].push(item);
+  if(target === state.activeMonth && state[key] !== rec[key]) flushMonth();
+  return target;
+}
+/* 항목이 어느 달 기록에 있는지 찾는다 */
+function monthFindItem(key, id){
+  var all = monthRecords();
+  var am = state.activeMonth;
+  if(all[am] && (all[am][key] || []).some(function(x){ return String(x.id) === String(id); })) return am;
+  var keys = Object.keys(all);
+  for(var i = 0; i < keys.length; i++){
+    var r = all[keys[i]];
+    if(r && (r[key] || []).some(function(x){ return String(x.id) === String(id); })) return keys[i];
+  }
+  return '';
+}
+/* 수정하면서 날짜를 다른 달로 바꾼 항목을 그 달 기록으로 옮긴다 */
+function moveItemToMonth(key, id, ym){
+  if(!isYmKey(ym)) return false;
+  var fromYm = monthFindItem(key, id);
+  if(!fromYm || fromYm === ym) return false;
+  var all = monthRecords();
+  var from = all[fromYm] || {};
+  var to = all[ym] || (all[ym] = emptyMonthRec());
+  var list = from[key] || [];
+  var idx = -1;
+  for(var i = 0; i < list.length; i++){ if(String(list[i].id) === String(id)){ idx = i; break; } }
+  if(idx < 0) return false;
+  var item = list.splice(idx, 1)[0];
+  if(!Array.isArray(to[key])) to[key] = [];
+  to[key].push(item);
+  if(!from[key].length && fromYm !== state.activeMonth) delete all[fromYm];
+  return true;
+}
+
+/* 달 바꾸기 — 화면의 입금·변동지출·추가투자만 그 달 기록으로 전환된다 */
+function setMonth(ym, opts){
+  if(!isYmKey(ym)) return false;
+  flushMonth();
+  var same = (ym === state.activeMonth);
+  if(same && !(opts && opts.force)){ closeMonthSheet(); return false; }
+  useMonth(ym);
+  monthSheetYear = Number(ym.slice(0, 4));
+  savEditId = null;
+  fixEditId = null;
+  expenseEditId = null;
+  xiEditId = null;
+  loanEditId = null;
+  closeIncomeForm();
+  saveState();
+  syncMonthUI();
+  updateMonthDates();
+  renderAll();
+  closeMonthSheet();
+  toast(monthWord(ym) + ' 기록으로 바꿨어요');
+  return true;
+}
+
+/* =========================================================
+   달 선택 시트
+   ========================================================= */
+var monthSheetYear = null;
+var MONTH_YEAR_MIN = 2020;
+var MONTH_YEAR_MAX = 2040;
+
+function monthSheetRender(){
+  var cur = curYm();
+  var am = isYmKey(state.activeMonth) ? state.activeMonth : cur;
+  if(!monthSheetYear) monthSheetYear = Number(am.slice(0, 4));
+  setText('month-year-label', monthSheetYear + '년');
+  setText('month-sheet-badge', monthLabel(am));
+  var cells = [];
+  for(var m = 1; m <= 12; m++){
+    var ym = monthSheetYear + '-' + pad2(m);
+    var info = monthInfo(ym);
+    var cls = 'mp-cell';
+    if(ym === am) cls += ' active';
+    if(ym === cur) cls += ' current';
+    if(ym > cur) cls += ' future';
+    if(info.items) cls += ' filled';
+    var hint;
+    if(info.items){
+      var parts = [];
+      if(info.expenses) parts.push('지출 ' + info.expenses);
+      if(info.incomes) parts.push('입금 ' + info.incomes);
+      if(info.extraInvestments) parts.push('투자 ' + info.extraInvestments);
+      hint = parts.join(' · ');
+    }else{
+      /* 다음 달만 '미리 보기', 더 뒤의 빈 달은 칸만 조용히 */
+      hint = (ym > cur) ? (ym === addMonths(cur, 1) ? '미리 보기' : '\u00a0') : '기록 없음';
+    }
+    cells.push('<button type="button" class="' + cls + '" data-month="' + ym + '" aria-pressed="' + (ym === am) + '"' +
+      ' aria-label="' + esc(monthLabel(ym)) + (info.items ? ' · 기록 ' + info.items + '건' : ' · 기록 없음') + '">' +
+      '<b>' + m + '월</b><span>' + esc(hint) + '</span></button>');
+  }
+  var grid = $('mp-grid');
+  if(grid) grid.innerHTML = cells.join('');
+
+  var prevYm = addMonths(am, -1), nextYm = addMonths(am, 1);
+  setText('mp-prev', '‹ ' + monthShortLabel(prevYm));
+  setText('mp-next', monthShortLabel(nextYm) + ' ›');
+  var prevBtn = $('mp-prev'), nextBtn = $('mp-next');
+  if(prevBtn) prevBtn.setAttribute('data-month', prevYm);
+  if(nextBtn) nextBtn.setAttribute('data-month', nextYm);
+
+  var nextInfo = monthInfo(nextYm);
+  setText('mp-start', nextInfo.items ? (monthLabel(nextYm) + '로 이동') : (monthLabel(nextYm) + ' 미리 보기 · 새 달 시작'));
+  var startBtn = $('mp-start');
+  if(startBtn) startBtn.setAttribute('data-month', nextYm);
+  var todayBtn = $('mp-today');
+  if(todayBtn){
+    todayBtn.hidden = (am === cur);
+    todayBtn.textContent = '이번 달(' + monthLabel(cur) + ')로 돌아가기';
+    todayBtn.setAttribute('data-month', cur);
+  }
+
+  var ai = monthInfo(am);
+  setText('month-summary', monthLabel(am) + ' · 입금 ' + manwon(ai.inc) + ' · 지출 ' + manwon(ai.exp) +
+    ' · 추가투자 ' + manwon(ai.xi) + (ai.items ? '' : ' · 아직 기록 없음'));
+  var yPrev = $('mp-year-prev'), yNext = $('mp-year-next');
+  if(yPrev) yPrev.disabled = monthSheetYear <= MONTH_YEAR_MIN;
+  if(yNext) yNext.disabled = monthSheetYear >= MONTH_YEAR_MAX;
+}
+function openMonthSheet(){
+  var wrap = $('month-sheet');
+  if(!wrap) return;
+  flushMonth();
+  monthSheetYear = Number((isYmKey(state.activeMonth) ? state.activeMonth : curYm()).slice(0, 4));
+  monthSheetRender();
+  wrap.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+function closeMonthSheet(){
+  var wrap = $('month-sheet');
+  if(wrap) wrap.hidden = true;
+  document.body.style.overflow = '';
+}
+function monthStepYear(delta){
+  var y = (monthSheetYear || Number(curYm().slice(0, 4))) + delta;
+  monthSheetYear = Math.max(MONTH_YEAR_MIN, Math.min(MONTH_YEAR_MAX, y));
+  monthSheetRender();
 }
 
 var toastTimer = null;
@@ -1630,7 +1993,7 @@ function openIncomeForm(id){
   if(nameEl) nameEl.value = it ? it.name : '';
   if(amtEl) amtEl.value = it ? fmt(it.amount) : '';
   if(memoEl) memoEl.value = it ? it.memo : '';
-  if(dateEl) dateEl.value = it ? (it.date || todayISO()) : todayISO();
+  if(dateEl) dateEl.value = it ? (it.date || monthDefaultDate(state.activeMonth)) : monthDefaultDate(state.activeMonth);
   incomeOwner = it ? (it.owner || '공동') : (incomeOwner || (ownerOptions()[0] || '공동'));
   renderIncomeOwners();
   var delBtn = $('income-delete');
@@ -1659,13 +2022,14 @@ function saveIncome(){
   if(!amount){ toast('입금 금액을 입력해 주세요'); if(amtEl) amtEl.focus(); return; }
   var owner = incomeOwner || '공동';
   var memo = memoEl ? memoEl.value.trim().slice(0, 40) : '';
-  var date = (dateEl && dateEl.value) ? dateEl.value : todayISO();
+  var date = (dateEl && dateEl.value) ? dateEl.value : monthDefaultDate(state.activeMonth);
   if(incomeEditId){
     state.incomes.forEach(function(it){
       if(it.id === incomeEditId){ it.owner = owner; it.name = name.slice(0, 24); it.amount = amount; it.memo = memo; it.date = date; }
     });
+    moveItemToMonth('incomes', incomeEditId, ymOfDate(date));
   }else{
-    state.incomes.push({id: uid(), owner: owner, name: name.slice(0, 24), amount: amount, memo: memo, date: date});
+    pushMonthItem('incomes', {id: uid(), owner: owner, name: name.slice(0, 24), amount: amount, memo: memo, date: date}, ymOfDate(date));
   }
   var edited = !!incomeEditId;
   saveState();
@@ -1702,6 +2066,9 @@ function saveExpenseEdit(id){
       e.date = (dateEl && dateEl.value) ? dateEl.value : e.date;
     }
   });
+  /* 날짜를 다른 달로 고쳤으면 그 달 기록으로 옮긴다 */
+  var editYm = (dateEl && dateEl.value) ? ymOfDate(dateEl.value) : '';
+  if(editYm) moveItemToMonth('expenses', id, editYm);
   expenseEditId = null;
   saveState();
   renderExpenses();
@@ -2200,17 +2567,17 @@ function addExtraInvestment(){
   var amount = amtEl ? Number(amtEl.value.replace(/[^0-9]/g, '')) : 0;
   if(!amount){ toast('추가투자 금액을 입력해 주세요'); if(amtEl) amtEl.focus(); return; }
   var name = (nameEl && nameEl.value.trim()) || '추가투자';
-  var date = (dateEl && dateEl.value) ? dateEl.value : todayISO();
+  var date = (dateEl && dateEl.value) ? dateEl.value : monthDefaultDate(state.activeMonth);
   var memo = memoEl ? memoEl.value.trim().slice(0, 30) : '';
   if(!Array.isArray(state.extraInvestments)) state.extraInvestments = [];
-  state.extraInvestments.push({id: uid(), date: date, name: name.slice(0, 20), amount: amount, memo: memo});
+  var xiYm = pushMonthItem('extraInvestments', {id: uid(), date: date, name: name.slice(0, 20), amount: amount, memo: memo}, ymOfDate(date));
   saveState();
   if(amtEl) amtEl.value = '';
   if(memoEl) memoEl.value = '';
   setText('xi-amount-hint', xiAmountHint(0));
   renderExtraInvestments();
   updateSummaries();
-  toast(manwon(amount) + ' 추가투자를 기록했어요');
+  toast(manwon(amount) + ' 추가투자를 기록했어요' + (xiYm === state.activeMonth ? '' : ' · ' + Number(xiYm.slice(5, 7)) + '월 기록'));
 }
 function saveExtraInvestment(id){
   var row = (state.extraInvestments || []).filter(function(r){ return r.id === id; })[0];
@@ -2223,8 +2590,9 @@ function saveExtraInvestment(id){
   if(!amount){ toast('추가투자 금액을 입력해 주세요'); if(amtEl) amtEl.focus(); return; }
   row.amount = amount;
   row.name = ((nameEl && nameEl.value.trim()) || row.name || '추가투자').slice(0, 20);
-  row.date = (dateEl && dateEl.value) ? dateEl.value : (row.date || todayISO());
+  row.date = (dateEl && dateEl.value) ? dateEl.value : (row.date || monthDefaultDate(state.activeMonth));
   row.memo = memoEl ? memoEl.value.trim().slice(0, 30) : '';
+  moveItemToMonth('extraInvestments', id, ymOfDate(row.date));
   xiEditId = null;
   saveState();
   renderExtraInvestments();
@@ -2305,19 +2673,21 @@ function mgSchedule(m){
   return {rows:rows, totalInterest:totalI, totalPaid:Math.round(num(m.principal)) + totalI, monthly: rows.length ? rows[0].amount : 0};
 }
 
-/* 오늘 기준 화면에 보여 줄 상태 (회차·잔액·누적) */
-function mgView(m){
+/* 고른 달 기준 화면에 보여 줄 상태 (회차·잔액·누적) — 달을 바꾸면 그 달 회차로 보인다 */
+function mgView(m, ym){
   var sch = mgSchedule(m);
   var rows = sch.rows, n = rows.length;
   var now = new Date();
-  var thisYm = now.getFullYear() + '-' + pad2(now.getMonth() + 1);
+  var curYmStr = now.getFullYear() + '-' + pad2(now.getMonth() + 1);
+  var thisYm = isYmKey(ym) ? ym : curYmStr;
   var first = mgFirstMonth(m.start);
   var payDay = mgPayDay(m.start);
   var r = ymDiff(first, thisYm) + 1;
   var paid = 0, status = '';
   if(r >= 1){
     paid = Math.min(r, n);
-    if(now.getDate() < payDay) paid = Math.min(paid, r - 1);
+    if(thisYm === curYmStr){ if(now.getDate() < payDay) paid = Math.min(paid, r - 1); }
+    else if(thisYm > curYmStr) paid = Math.min(paid, r - 1);
   }
   paid = Math.max(0, Math.min(paid, n));
   var cumP = 0, cumI = 0;
@@ -2328,7 +2698,9 @@ function mgView(m){
   if(!n) status = '상환 시작 전';
   else if(r > n) status = '상환 완료';
   else if(r < 1) status = '상환 시작 전';
-  else status = (now.getDate() >= payDay) ? '납입 완료' : '납입 예정';
+  else if(thisYm > curYmStr) status = '납입 예정';
+  else if(thisYm === curYmStr) status = (now.getDate() >= payDay) ? '납입 완료' : '납입 예정';
+  else status = '납입 완료';
   return {
     sch:sch, rows:rows, total:n, r:r, paid:paid, cumP:cumP, cumI:cumI, balance:balance,
     L:L, pct: L > 0 ? cumP / L * 100 : 0, current:current, status:status,
@@ -2368,7 +2740,7 @@ function renderMgTable(v){
 
 function renderMortgage(){
   var m = state.mortgage || clone(MG_DEFAULTS);
-  var v = mgView(m);
+  var v = mgView(m, state.activeMonth);
   setText('mg-name', m.name || '대출');
   setText('mg-cond', mgCondText(m));
   setText('mg-balance', won(v.balance));
@@ -2385,7 +2757,7 @@ function renderMortgage(){
     var label;
     if(v.r > v.total) label = '마지막 · ' + row.no + '회차 (' + ymLabel(addMonths(v.firstMonth, row.no - 1)) + ')';
     else if(v.r < 1) label = '첫 회차 · ' + row.no + '회차 (' + ymLabel(addMonths(v.firstMonth, row.no - 1)) + ')';
-    else label = '이번 달 · ' + row.no + '회차 (' + ymLabel(addMonths(v.firstMonth, row.no - 1)) + ')';
+    else label = monthWord(v.thisYm) + ' · ' + row.no + '회차 (' + ymLabel(addMonths(v.firstMonth, row.no - 1)) + ')';
     setText('mg-this-label', label);
     setText('mg-status', v.status);
     setText('mg-this-total', won(row.amount));
@@ -2477,6 +2849,9 @@ function renderExtraLoans(){
    요약 숫자 갱신 (금액 수정 시 리스트를 다시 그리지 않음)
    ========================================================= */
 function updateSummaries(){
+  var activeYm = isYmKey(state.activeMonth) ? state.activeMonth : curYm();
+  var isThisMonth = (activeYm === curYm());
+  var mWord = monthWord(activeYm);
   var sv = totalSavings(), fx = totalFixed(), vr = totalVariable(), inc = totalIncome();
   var xi = totalExtraInvestments();   /* 잉여금에서 더 투자한 돈 */
   var tot = sv + fx + vr;
@@ -2530,8 +2905,8 @@ function updateSummaries(){
   if(moneyGrid) moneyGrid.hidden = pristine;
   var heroTop = document.querySelector('.hero-top');
   if(heroTop) heroTop.hidden = pristine;
-  setText('spare-label', emptyIncome ? '이번 달 생활비' : '들어온 돈 − 고정지출 − 고정저축');
-  setText('spare-badge', emptyIncome ? '입금 없음' : '이번 달');
+  setText('spare-label', emptyIncome ? mWord + ' 생활비' : '들어온 돈 − 고정지출 − 고정저축');
+  setText('spare-badge', emptyIncome ? '입금 없음' : (isThisMonth ? '이번 달' : mWord + (activeYm > curYm() ? ' · 미리 보기' : ' · 지난 기록')));
   if(spareCard){
     spareCard.classList.toggle('empty', emptyIncome);
     spareCard.classList.toggle('neg', !emptyIncome && (free < 0 || fin < 0));
@@ -2549,7 +2924,7 @@ function updateSummaries(){
   }else if(free < 0){
     sub = '고정지출과 고정저축이 입금보다 ' + won(-free) + ' 많아요.';
   }else{
-    sub = '고정지출과 고정저축을 빼고 남은, 이번 달에 쓸 수 있는 돈이에요.';
+    sub = '고정지출과 고정저축을 빼고 남은, ' + mWord + '에 쓸 수 있는 돈이에요.';
   }
   setText('spare-free-sub', sub);
 
@@ -2586,10 +2961,10 @@ function updateSummaries(){
   setText('loan-remain', loanTotal > 0
     ? (recovered > loanTotal ? '초과 ' + manwon(recovered - loanTotal) : '남은 ' + manwon(loanTotal - recovered))
     : (recovered > 0 ? '목표 미설정' : '남은 0원'));
-  var thisYm = todayISO().slice(0, 7);
+  var thisYm = activeYm;
   var thisMonthRows = loanRows.filter(function(r){ return String(r.date || '').slice(0, 7) === thisYm; });
   var thisMonthSum = thisMonthRows.reduce(function(a, r){ return a + Math.max(0, num(r.amount)); }, 0);
-  setText('loan-this-month', '이번 달(' + Number(thisYm.slice(5, 7)) + '월) 받은 금액 ' + won(thisMonthSum) + (thisMonthRows.length > 1 ? ' · ' + thisMonthRows.length + '건' : ''));
+  setText('loan-this-month', (isThisMonth ? '이번 달(' : '') + Number(thisYm.slice(5, 7)) + '월' + (isThisMonth ? ')' : '') + ' 받은 금액 ' + won(thisMonthSum) + (thisMonthRows.length > 1 ? ' · ' + thisMonthRows.length + '건' : ''));
   var bar = $('loan-bar');
   if(bar) bar.style.width = Math.max(0, Math.min(100, loanPct)) + '%';
 
@@ -2601,6 +2976,7 @@ function renderAll(){
   /* 전체를 다시 그리는 경우(처음 열기·불러오기·동기화 수신·초기화)에는 열린 수정창을 접는다 */
   savEditId = null;
   fixEditId = null;
+  syncMonthUI();
   renderCategoryChips();
   renderExpenses();
   renderIncomes();
@@ -3845,6 +4221,7 @@ function runParse(){
    가계부 데이터 파일 (.json) 내보내기 / 불러오기
    ========================================================= */
 function dataPayload(){
+  try{ flushMonth(); }catch(err){}
   return {
     app: '우리 집 살림',
     format: 'household-budget/v1',
@@ -3919,6 +4296,30 @@ function wire(){
   // 탭
   document.querySelectorAll('.tab').forEach(function(b){
     b.addEventListener('click', function(){ switchTab(b.getAttribute('data-tab')); });
+  });
+
+  /* ---------- 기준 달 선택 시트 (상단 '2026년 11월 ▾') ---------- */
+  var monthPill = $('month-pill');
+  if(monthPill) monthPill.addEventListener('click', openMonthSheet);
+  var monthBackdrop = $('month-backdrop');
+  if(monthBackdrop) monthBackdrop.addEventListener('click', closeMonthSheet);
+  var monthClose = $('mp-close');
+  if(monthClose) monthClose.addEventListener('click', closeMonthSheet);
+  var yearPrev = $('mp-year-prev');
+  if(yearPrev) yearPrev.addEventListener('click', function(){ monthStepYear(-1); });
+  var yearNext = $('mp-year-next');
+  if(yearNext) yearNext.addEventListener('click', function(){ monthStepYear(1); });
+  var monthPanel = $('month-panel');
+  if(monthPanel){
+    monthPanel.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('[data-month]') : null;
+      if(!b || !monthPanel.contains(b)) return;
+      var ym = b.getAttribute('data-month');
+      if(ym) setMonth(ym);
+    });
+  }
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeMonthSheet();
   });
   document.querySelectorAll('[data-goto]').forEach(function(b){
     b.addEventListener('click', function(){ switchTab(b.getAttribute('data-goto')); });
@@ -4035,21 +4436,23 @@ function wire(){
       var amountEl = $('ex-amount');
       var amount = amountEl ? Number(amountEl.value.replace(/[^0-9]/g, '')) : 0;
       if(!amount){ toast('금액을 입력해 주세요'); if(amountEl) amountEl.focus(); return; }
-      var memoEl = $('ex-memo');
-      var dateEl = $('ex-date');
-      state.expenses.push({
+      var memoEl2 = $('ex-memo');
+      var dateEl2 = $('ex-date');
+      var exDate = (dateEl2 && dateEl2.value) ? dateEl2.value : monthDefaultDate(state.activeMonth);
+      var exYm = ymOfDate(exDate);
+      var exTarget = pushMonthItem('expenses', {
         id: uid(),
-        date: (dateEl && dateEl.value) ? dateEl.value : todayISO(),
+        date: exDate,
         category: selectedCategory,
-        memo: (memoEl && memoEl.value.trim()) ? memoEl.value.trim() : '지출',
+        memo: (memoEl2 && memoEl2.value.trim()) ? memoEl2.value.trim() : '지출',
         amount: amount
-      });
+      }, exYm);
       saveState();
       if(amountEl) amountEl.value = '';
-      if(memoEl) memoEl.value = '';
+      if(memoEl2) memoEl2.value = '';
       renderExpenses();
       updateSummaries();
-      toast('저장했어요');
+      toast(exTarget === state.activeMonth ? '저장했어요' : (Number(exYm.slice(5, 7)) + '월 기록으로 저장했어요'));
     });
   }
 
@@ -4220,10 +4623,14 @@ function wire(){
       }
       if(hit('csv-add')){
         if(!parsedRows.length) return;
+        var otherMonths = {};
         parsedRows.forEach(function(r){
-          state.expenses.push({id: uid(), date: r.date, category: r.category, memo: r.merchant, amount: r.amount});
+          var rYm = ymOfDate(r.date);
+          pushMonthItem('expenses', {id: uid(), date: r.date, category: r.category, memo: r.merchant, amount: r.amount}, rYm);
+          if(rYm !== state.activeMonth) otherMonths[rYm] = (otherMonths[rYm] || 0) + 1;
         });
         var n = parsedRows.length;
+        var otherNote = Object.keys(otherMonths).map(function(k){ return Number(k.slice(5, 7)) + '월 ' + otherMonths[k] + '건'; }).join(' · ');
         saveState();
         parsedRows = [];
         parsedRowsAll = [];
@@ -4234,7 +4641,7 @@ function wire(){
         if(t2) t2.value = '';
         renderExpenses();
         updateSummaries();
-        toast(n + '건을 추가했어요');
+        toast(n + '건을 추가했어요' + (otherNote ? ' · ' + otherNote + '은 그 달 기록으로' : ''));
       }
     });
   }
@@ -4890,6 +5297,38 @@ function nugaSig(s){
     })];
   });
 }
+/* 달별 항목 모음 — 지금 달은 state 의 배열이 기준이고, 다른 달은 그 달 기록에서 가져온다.
+   두 폰이 서로 다른 달을 보고 있어도 같은 순서(달 → id)가 나오도록 정렬해 돌려준다. */
+function syncItems(s, kind){
+  s = s || {};
+  var recs = (s.monthlyRecords && typeof s.monthlyRecords === 'object') ? s.monthlyRecords : null;
+  var am = isYmKey(s.activeMonth) ? s.activeMonth : '';
+  var months = [];
+  if(recs){ Object.keys(recs).forEach(function(k){ if(isYmKey(k) && months.indexOf(k) < 0) months.push(k); }); }
+  if(am && months.indexOf(am) < 0) months.push(am);
+  if(!recs && !am && !months.length) months.push('');
+  months.sort();
+  var seen = {}, rows = [];
+  months.forEach(function(ym){
+    var list;
+    if(recs && ym === am) list = s[kind];
+    else if(recs && ym) list = (recs[ym] || {})[kind];
+    else list = (ym === am || !ym) ? s[kind] : null;
+    (list || []).forEach(function(it){
+      if(!it || typeof it !== 'object') return;
+      var k = (it.id != null) ? String(it.id) : '';
+      if(k && seen[k]) return;
+      if(k) seen[k] = 1;
+      rows.push({ym: ym, it: it});
+    });
+  });
+  rows.sort(function(a, b){
+    if(a.ym !== b.ym) return a.ym < b.ym ? -1 : 1;
+    var x = String(a.it.id || ''), y = String(b.it.id || '');
+    return x < y ? -1 : (x > y ? 1 : 0);
+  });
+  return rows.map(function(r){ return r.it; });
+}
 function syncFingerprint(s){
   if(!s || typeof s !== 'object') return '';
   function amt(v){ return Math.round(num(v)); }
@@ -4901,19 +5340,19 @@ function syncFingerprint(s){
     mortgage: s.mortgage ? [String(s.mortgage.name || ''), amt(s.mortgage.principal), Math.round(num(s.mortgage.rate) * 100) / 100, String(s.mortgage.method || ''), amt(s.mortgage.months), String(s.mortgage.start || '')] : null,
     extraLoans: (s.extraLoans || []).map(function(e){ return [String(e.id || ''), String(e.name || ''), amt(e.amount), String(e.memo || '')]; }),
     barn: amt(s.barn),
-    incomes: (s.incomes || []).map(function(i){ return [String(i.id || ''), String(i.owner || ''), String(i.name || ''), amt(i.amount), String(i.memo || ''), String(i.date || '')]; }),
-    extraInvestments: (s.extraInvestments || []).map(function(x){ return [String(x.id || ''), String(x.date || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; }),
-    expenses: (s.expenses || []).map(function(e){ return [String(e.id || ''), String(e.date || ''), String(e.category || ''), String(e.memo || ''), amt(e.amount)]; }),
+    incomes: syncItems(s, 'incomes').map(function(i){ return [String(i.id || ''), String(i.owner || ''), String(i.name || ''), amt(i.amount), String(i.memo || ''), String(i.date || '')]; }),
+    extraInvestments: syncItems(s, 'extraInvestments').map(function(x){ return [String(x.id || ''), String(x.date || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; }),
+    expenses: syncItems(s, 'expenses').map(function(e){ return [String(e.id || ''), String(e.date || ''), String(e.category || ''), String(e.memo || ''), amt(e.amount)]; }),
     nuga: nugaSig(s)
   };
   return JSON.stringify(o);
 }
 function syncHasData(s){
   if(!s || typeof s !== 'object') return false;
-  if((s.incomes || []).length || (s.expenses || []).length) return true;
+  if(syncItems(s, 'incomes').length || syncItems(s, 'expenses').length) return true;
   if((s.transfers || []).length) return true;
   if((s.extraLoans || []).length) return true;
-  if((s.extraInvestments || []).length) return true;
+  if(syncItems(s, 'extraInvestments').length) return true;
   if((s.savings || []).some(function(x){ return num(x.amount) > 0; })) return true;
   if((s.fixed || []).some(function(x){ return num(x.amount) > 0; })) return true;
   if(num(s.barn) > 0) return true;
@@ -4981,23 +5420,26 @@ function syncSections(s){
     mortgage: JSON.stringify(s.mortgage ? [String(s.mortgage.name || ''), amt(s.mortgage.principal), Math.round(num(s.mortgage.rate) * 100) / 100, String(s.mortgage.method || ''), amt(s.mortgage.months), String(s.mortgage.start || '')] : null),
     extraLoans: JSON.stringify((s.extraLoans || []).map(function(e){ return [String(e.id || ''), String(e.name || ''), amt(e.amount), String(e.memo || '')]; })),
     barn: amt(s.barn),
-    incomes: JSON.stringify((s.incomes || []).map(function(i){ return [String(i.id || ''), String(i.owner || ''), String(i.name || ''), amt(i.amount), String(i.memo || ''), String(i.date || '')]; })),
-    extraInvestments: JSON.stringify((s.extraInvestments || []).map(function(x){ return [String(x.id || ''), String(x.date || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; })),
-    expenses: JSON.stringify((s.expenses || []).map(function(e){ return [String(e.id || ''), String(e.date || ''), String(e.category || ''), String(e.memo || ''), amt(e.amount)]; })),
+    incomes: JSON.stringify(syncItems(s, 'incomes').map(function(i){ return [String(i.id || ''), String(i.owner || ''), String(i.name || ''), amt(i.amount), String(i.memo || ''), String(i.date || '')]; })),
+    extraInvestments: JSON.stringify(syncItems(s, 'extraInvestments').map(function(x){ return [String(x.id || ''), String(x.date || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; })),
+    expenses: JSON.stringify(syncItems(s, 'expenses').map(function(e){ return [String(e.id || ''), String(e.date || ''), String(e.category || ''), String(e.memo || ''), amt(e.amount)]; })),
     nuga: JSON.stringify(nugaSig(s))
   };
 }
 function syncNoticeDiff(before, after){
   before = before || {}; after = after || {};
   var sb = syncSections(before), sa = syncSections(after);
-  var beMap = syncIdMap(before.expenses), aeMap = syncIdMap(after.expenses);
-  var biMap = syncIdMap(before.incomes), aiMap = syncIdMap(after.incomes);
-  var newExp = (after.expenses || []).filter(function(e){ return !beMap[String(e.id)]; });
+  var beExp = syncItems(before, 'expenses'), aeExp = syncItems(after, 'expenses');
+  var beInc = syncItems(before, 'incomes'), aeInc = syncItems(after, 'incomes');
+  var beXi = syncItems(before, 'extraInvestments'), aeXi = syncItems(after, 'extraInvestments');
+  var beMap = syncIdMap(beExp), aeMap = syncIdMap(aeExp);
+  var biMap = syncIdMap(beInc), aiMap = syncIdMap(aeInc);
+  var newExp = aeExp.filter(function(e){ return !beMap[String(e.id)]; });
   var goneExp = Object.keys(beMap).filter(function(id){ return !aeMap[id]; }).length;
-  var newInc = (after.incomes || []).filter(function(i){ return !biMap[String(i.id)]; });
+  var newInc = aeInc.filter(function(i){ return !biMap[String(i.id)]; });
   var goneInc = Object.keys(biMap).filter(function(id){ return !aiMap[id]; }).length;
-  var bxMap = syncIdMap(before.extraInvestments), axMap = syncIdMap(after.extraInvestments);
-  var newXi = (after.extraInvestments || []).filter(function(x){ return !bxMap[String(x.id)]; });
+  var bxMap = syncIdMap(beXi), axMap = syncIdMap(aeXi);
+  var newXi = aeXi.filter(function(x){ return !bxMap[String(x.id)]; });
   var goneXi = Object.keys(bxMap).filter(function(id){ return !axMap[id]; }).length;
   var changes = [];
   if(newInc.length) changes.push('입금 +' + newInc.length + '건');
@@ -5162,8 +5604,8 @@ function syncCloseSheet(){
 function syncSummary(s, at){
   var parts = [];
   function sum(list){ return (list || []).reduce(function(a, b){ return a + num(b.amount); }, 0); }
-  parts.push('입금 ' + (s.incomes || []).length + '건');
-  parts.push('지출 ' + (s.expenses || []).length + '건');
+  parts.push('입금 ' + syncItems(s, 'incomes').length + '건');
+  parts.push('지출 ' + syncItems(s, 'expenses').length + '건');
   parts.push('저축 ' + manwon(sum(s.savings)));
   parts.push('고정 ' + manwon(sum(s.fixed)));
   if(at){
@@ -5222,10 +5664,15 @@ function syncPickLater(){
 /* ---- 원격 상태 반영 ---- */
 function syncApplyRemote(raw){
   sync.applying = true;
+  var keepMonth = state && state.activeMonth;
   try{
     localStorage.setItem(LS_KEY, JSON.stringify(raw));
   }catch(err){}
   state = loadState();
+  /* 상대방이 다른 달을 보고 있어도 이 폰이 보던 달은 그대로 둔다 */
+  if(isYmKey(keepMonth) && keepMonth !== state.activeMonth){
+    try{ flushMonth(); useMonth(keepMonth); syncMonthUI(); updateMonthDates(); }catch(err){}
+  }
   /* 지금 이 폰 내용은 서버와 맞춰진 상태임을 기억해 둔다 */
   sync.lastFp = syncFingerprint(state);
   syncWriteStore({ lastFp: sync.lastFp, lastSyncAt: Date.now() });
@@ -5253,6 +5700,7 @@ function syncQueuePush(){
 }
 function syncPushNow(){
   if(!sync.enabled || !sync.db || !sync.hash || !sync.modules || sync.applying) return;
+  try{ flushMonth(); }catch(err){}
   var fs = sync.modules.fs;
   var ref = fs.doc(sync.db, 'households', sync.hash);
   var payload = {
@@ -5522,19 +5970,26 @@ window.__hbSync = {
   lastFp: function(){ return syncReadStore().lastFp || ''; }
 };
 
+/* 테스트용 노출 (달별 보관·달 전환 확인) */
+window.__hbMonth = {
+  cur: curYm,
+  active: function(){ return state.activeMonth; },
+  records: function(){ flushMonth(); return state.monthlyRecords; },
+  info: monthInfo,
+  set: setMonth,
+  open: openMonthSheet,
+  close: closeMonthSheet,
+  defaultDate: monthDefaultDate
+};
+
 /* =========================================================
    시작
    ========================================================= */
 function init(){
-  var dateEl = $('ex-date');
-  if(dateEl) dateEl.value = todayISO();
-  var incDate = $('income-date');
-  if(incDate) incDate.value = todayISO();
   var pill = $('month-pill');
-  if(pill){
-    var d = new Date();
-    pill.textContent = d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 기준';
-  }
+  if(pill) pill.textContent = monthLabel(isYmKey(state.activeMonth) ? state.activeMonth : curYm()) + ' ▾';
+  updateMonthDates();
+  syncMonthUI();
   renderAll();
   wire();
   syncInit();
