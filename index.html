@@ -213,7 +213,7 @@ main{padding:0 16px;display:flex;flex-direction:column;gap:12px}
 .tx-date{margin:1px 0 0;font-size:11px;color:var(--muted)}
 .tx-amt{font-size:14px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
 .tx-del{border:0;background:none;color:#c3cad2;font-size:15px;cursor:pointer;padding:6px 2px 6px 6px;line-height:1}
-.empty{margin:0;padding:22px 0;text-align:center;font-size:12.5px;color:var(--muted)}
+li.empty,td.empty{margin:0;padding:22px 0;text-align:center;font-size:12.5px;color:var(--muted)}
 textarea{width:100%;border:1px solid #e5e8eb;border-radius:14px;padding:12px;background:#fbfcfd;resize:vertical;
   font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;outline:none;min-height:104px}
 textarea:focus{border-color:#c6dcff;background:#fff}
@@ -344,8 +344,48 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 .sheet .card-head{margin-bottom:8px}
 .sheet .btn.block{margin-top:2px}
 .sheet-foot{margin:12px 0 0;font-size:11px;color:#9aa3ad;line-height:1.68}
+/* ---------- 초간단 첫 화면 (한눈에) ---------- */
+.home-hero{padding:20px 18px 16px}
+.hero-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.home-hero .spare-label{font-size:13px}
+.home-hero .spare-amount{font-size:38px;line-height:1.12;letter-spacing:-1.5px;margin:6px 0 0}
+.home-hero .spare-sub{margin-top:7px;font-size:12.5px}
+.home-empty{padding:8px 0 2px}
+.home-empty strong{display:block;font-size:19px;font-weight:800;letter-spacing:-.6px;color:#4e5968}
+.home-empty span{display:block;margin-top:6px;font-size:12.5px;color:var(--sub);line-height:1.55}
+.money-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.money-tile{background:rgba(255,255,255,.85);border-radius:14px;padding:10px 12px;min-width:0}
+.money-tile span{display:block;font-size:11.5px;color:var(--sub);font-weight:600;letter-spacing:-.2px}
+.money-tile strong{display:block;margin-top:3px;font-size:15px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.money-tile.final{background:#fff;box-shadow:inset 0 0 0 1.5px #cfe6ff}
+.money-tile.final.neg strong{color:#e5483c}
+.spare-card.empty .money-tile{background:rgba(255,255,255,.9)}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.home-actions .btn{padding:14px 6px;font-size:14px}
+#income-add-btn{background:#fff;color:#1b64da;box-shadow:inset 0 0 0 1.5px #bfd8ff}
+#income-add-btn:active{background:#f2f8ff}
+.home-month{padding:16px}
+.home-month .card-head{margin-bottom:12px}
+.month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.month-tile{background:#f7f8fa;border:0;border-radius:14px;padding:11px 10px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;font:inherit;color:inherit;min-width:0}
+.month-tile:active{background:#eef1f4}
+.mt-label{font-size:11.5px;color:var(--sub);font-weight:600;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.month-tile strong{font-size:13px;font-weight:800;letter-spacing:-.6px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt-go{font-size:10.5px;color:#8b95a1;font-weight:600}
+.mt-go::after{content:' ›'}
+.more-toggle{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:#fff;border:0;border-radius:16px;padding:14px;font:inherit;
+  font-size:13px;font-weight:700;color:#4e5968;cursor:pointer;letter-spacing:-.2px;
+  box-shadow:0 1px 2px rgba(17,24,39,.04),0 10px 24px -20px rgba(17,24,39,.25)}
+.more-toggle:active{background:#fafbfc}
+.more-caret{font-size:10px;color:#8b95a1;transition:transform .2s}
+.more-toggle[aria-expanded="true"] .more-caret{transform:rotate(180deg)}
+.more-panel{display:flex;flex-direction:column;gap:12px}
 @media (max-width:359px){
   .mg-table th:last-child,.mg-table td:last-child{display:none}
+  .home-hero .spare-amount{font-size:32px}
+  .month-tile strong{font-size:11.5px}
+  .money-tile strong{font-size:13.5px}
+  .home-actions .btn{font-size:12.5px;padding:13px 4px}
 }
 @media (max-width:379px){
   .hero-amount{font-size:27px}
@@ -388,121 +428,157 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
         <p class="hint">받으신 <b>.json</b> 파일을 한 번 불러오면 저축 · 고정지출 · 자동이체 · 대출 내역이 바로 채워져요. 입력한 내용은 이 기기에 저장되고, 부부 실시간 동기화를 켜면 두 분 폰에 함께 반영돼요.</p>
         <button class="btn primary block" id="setup-import-btn">데이터 파일 불러오기</button>
       </div>
-      <div class="card hero">
-        <p class="hero-label">매달 저축하는 돈</p>
-        <h2 class="hero-amount" id="home-save">0원</h2>
-        <p class="hero-sub" id="home-sub">고정지출 0원 · 변동지출 0원</p>
-        <div class="stat-row">
-          <div class="stat"><span>월 저축</span><strong id="stat-save">0원</strong></div>
-          <div class="stat"><span>고정지출</span><strong id="stat-fixed">0원</strong></div>
-          <div class="stat"><span>변동지출</span><strong id="stat-var">0원</strong></div>
-        </div>
-      </div>
 
-      <div class="card" id="sync-card">
-        <div class="card-head">
-          <h3 class="card-title">부부 실시간 동기화</h3>
-          <span class="badge gray" id="sync-card-badge">꺼짐</span>
+      <!-- 1) 이번 달 생활비 현황 (핵심 카드) -->
+      <div class="card spare-card home-hero" id="spare-card">
+        <div class="hero-top">
+          <p class="spare-label" id="spare-label">고정·저축 빼고 남은 돈</p>
+          <span class="badge gray" id="spare-badge">이번 달</span>
         </div>
-        <p class="hint" id="sync-card-desc">두 분이 정한 방 코드로 연결하면, 한쪽 폰에서 고친 가계부가 다른 폰에 바로 반영돼요. 지금은 이 기기에만 저장하고 있어요.</p>
-        <button class="btn ghost small block" id="sync-card-btn">동기화 설정 열기</button>
-      </div>
-
-      <div class="card spare-card" id="spare-card">
-        <div class="card-head">
-          <h3 class="card-title">이번 달 여윳돈</h3>
-          <span class="badge gray">입금 − 고정 − 저축</span>
-        </div>
-        <p class="spare-label">고정 차감 후 여윳돈</p>
         <h2 class="spare-amount" id="spare-free">0원</h2>
         <p class="spare-sub" id="spare-free-sub">입금 내역을 넣으면 여윳돈이 바로 계산돼요.</p>
-        <div class="flow">
-          <div class="flow-row"><span>총 입금</span><strong id="flow-income">0원</strong></div>
-          <div class="flow-row minus"><span>고정지출</span><strong id="flow-fixed">0원</strong></div>
-          <div class="flow-row minus"><span>월 저축</span><strong id="flow-save">0원</strong></div>
-          <div class="flow-row sum"><span>= 고정 차감 후 여윳돈</span><strong id="flow-free">0원</strong></div>
-          <div class="flow-row minus"><span>변동지출</span><strong id="flow-var">0원</strong></div>
-          <div class="flow-row final" id="flow-final-row"><span>= 최종 남는 돈</span><strong id="flow-final">0원</strong></div>
+        <div class="home-empty" id="spare-empty" hidden>
+          <strong>아직 들어온 돈이 없어요</strong>
+          <span>월급처럼 들어온 돈을 넣으면, 고정지출·저축을 빼고 이번 달에 쓸 수 있는 돈이 여기에 나와요.</span>
         </div>
-        <p class="flow-foot">총 입금에서 고정지출과 월 저축을 빼면 생활비로 쓸 수 있는 여윳돈이고, 거기서 이번 달 변동지출까지 빼면 최종 남는 돈이에요.</p>
+        <div class="money-grid">
+          <div class="money-tile"><span>들어온 돈</span><strong id="tile-income">0원</strong></div>
+          <div class="money-tile"><span>고정·저축</span><strong id="tile-fixedsave">0원</strong></div>
+          <div class="money-tile"><span>쓴 돈</span><strong id="tile-var">0원</strong></div>
+          <div class="money-tile final" id="tile-final-box"><span>쓴 돈 빼고 남은 돈</span><strong id="tile-final">0원</strong></div>
+        </div>
+        <div class="home-actions">
+          <button class="btn primary" id="quick-expense-btn" type="button">+ 지출 기록하기</button>
+          <button class="btn" id="income-add-btn" type="button">+ 입금 추가</button>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="card-head">
-          <h3 class="card-title">입금 내역</h3>
-          <strong id="income-total" style="font-size:15px;font-variant-numeric:tabular-nums">0원</strong>
+      <!-- 2) 이번 달 우리 집 (3칸 요약 · 누르면 해당 탭) -->
+      <div class="card home-month">
+        <div class="card-head"><h3 class="card-title">이번 달 우리 집</h3><span class="badge gray">눌러서 보기</span></div>
+        <div class="month-grid">
+          <button class="month-tile" type="button" data-goto="savings">
+            <span class="mt-label">매달 모으는 돈</span>
+            <strong id="stat-save">0원</strong>
+            <span class="mt-go">저축</span>
+          </button>
+          <button class="month-tile" type="button" data-goto="fixed">
+            <span class="mt-label">매달 나가는 돈</span>
+            <strong id="stat-fixed">0원</strong>
+            <span class="mt-go">고정지출</span>
+          </button>
+          <button class="month-tile" type="button" data-goto="variable">
+            <span class="mt-label">지금까지 쓴 돈</span>
+            <strong id="stat-var">0원</strong>
+            <span class="mt-go">변동지출</span>
+          </button>
         </div>
-        <p class="hint small" style="margin-bottom:10px">월급·부수입처럼 들어온 돈을 적어 두면 위 여윳돈이 바로 계산돼요. 내역을 누르면 금액·메모를 고칠 수 있어요.</p>
-        <ul class="tx-list" id="income-list"></ul>
-        <button class="btn ghost small block" id="income-add-btn" style="margin-top:12px">+ 입금 추가</button>
-        <div class="extra-form" id="income-form" hidden>
-          <p class="hint small" id="income-form-title" style="margin-bottom:8px;font-weight:700;color:#4e5968">입금 추가</p>
-          <div class="field"><input id="income-name" maxlength="24" placeholder="항목 (예: 월급)" aria-label="입금 항목"></div>
-          <div class="field amount"><input id="income-amount" inputmode="numeric" placeholder="0" aria-label="입금 금액"><span class="unit">원</span></div>
-          <div class="income-chips" id="income-owners"></div>
-          <div class="field"><input id="income-memo" maxlength="40" placeholder="메모 (선택) · 예: 11월 월급" aria-label="입금 메모"></div>
-          <div class="field date"><input type="date" id="income-date" aria-label="입금 날짜"></div>
-          <div class="row gap" style="margin-top:2px">
-            <button class="btn primary small" id="income-save">추가</button>
-            <button class="btn ghost small" id="income-cancel">취소</button>
-            <button class="btn ghost small" id="income-delete" hidden>삭제</button>
+      </div>
+
+      <!-- 3) 자세한 내역 · 설정 (기본 접힘) -->
+      <button class="more-toggle" id="more-toggle" type="button" aria-expanded="false" aria-controls="more-panel">
+        <span>자세한 내역 · 설정 더보기</span><span class="more-caret" aria-hidden="true">▾</span>
+      </button>
+
+      <div class="more-panel" id="more-panel" hidden>
+        <div class="card" id="income-card">
+          <div class="card-head">
+            <h3 class="card-title">입금 내역</h3>
+            <strong id="income-total" style="font-size:15px;font-variant-numeric:tabular-nums">0원</strong>
+          </div>
+          <p class="hint small" style="margin-bottom:10px">월급·부수입처럼 들어온 돈을 적어 두면 위 여윳돈이 바로 계산돼요. 내역을 누르면 금액·메모를 고칠 수 있어요.</p>
+          <ul class="tx-list" id="income-list"></ul>
+          <button class="btn ghost small block" id="income-add-btn-inner" type="button" style="margin-top:12px">+ 입금 추가</button>
+          <div class="extra-form" id="income-form" hidden>
+            <p class="hint small" id="income-form-title" style="margin-bottom:8px;font-weight:700;color:#4e5968">입금 추가</p>
+            <div class="field"><input id="income-name" maxlength="24" placeholder="항목 (예: 월급)" aria-label="입금 항목"></div>
+            <div class="field amount"><input id="income-amount" inputmode="numeric" placeholder="0" aria-label="입금 금액"><span class="unit">원</span></div>
+            <div class="income-chips" id="income-owners"></div>
+            <div class="field"><input id="income-memo" maxlength="40" placeholder="메모 (선택) · 예: 11월 월급" aria-label="입금 메모"></div>
+            <div class="field date"><input type="date" id="income-date" aria-label="입금 날짜"></div>
+            <div class="row gap" style="margin-top:2px">
+              <button class="btn primary small" id="income-save">추가</button>
+              <button class="btn ghost small" id="income-cancel">취소</button>
+              <button class="btn ghost small" id="income-delete" hidden>삭제</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <div class="card-head">
-          <h3 class="card-title">이번 달 돈의 흐름</h3>
-          <span class="badge gray">저축 · 고정 · 변동</span>
-        </div>
-        <div class="chart-row">
-          <div class="donut" id="donut">
-            <div class="donut-hole"><span>합계</span><strong id="donut-total">0원</strong></div>
+        <div class="card" id="flow-card">
+          <div class="card-head">
+            <h3 class="card-title">이번 달 돈의 흐름</h3>
+            <span class="badge gray">저축 · 고정 · 변동</span>
           </div>
-          <ul class="legend" id="legend"></ul>
+          <p class="hint small" id="home-sub">고정지출 0원 · 변동지출 0원</p>
+          <div class="chart-row">
+            <div class="donut" id="donut">
+              <div class="donut-hole"><span>합계</span><strong id="donut-total">0원</strong></div>
+            </div>
+            <ul class="legend" id="legend"></ul>
+          </div>
+          <div class="bars" id="ratio-bars"></div>
+          <div class="flow">
+            <div class="flow-row"><span>들어온 돈</span><strong id="flow-income">0원</strong></div>
+            <div class="flow-row minus"><span>고정지출</span><strong id="flow-fixed">0원</strong></div>
+            <div class="flow-row minus"><span>매달 저축</span><strong id="flow-save">0원</strong></div>
+            <div class="flow-row sum"><span>= 고정·저축 빼고 남은 돈</span><strong id="flow-free">0원</strong></div>
+            <div class="flow-row minus"><span>쓴 돈</span><strong id="flow-var">0원</strong></div>
+            <div class="flow-row final" id="flow-final-row"><span>= 쓴 돈 빼고 남은 돈</span><strong id="flow-final">0원</strong></div>
+          </div>
+          <p class="flow-foot" id="home-save-line">매달 저축하는 돈 <b id="home-save">0원</b>은 따로 모으는 돈이라, 쓸 수 있는 돈에서 빼고 계산해요.</p>
         </div>
-        <div class="bars" id="ratio-bars"></div>
-      </div>
 
-      <div class="card">
-        <div class="card-head">
-          <h3 class="card-title">곳간 500만 원 초과분</h3>
-          <span class="badge">투자 재원</span>
+        <div class="card" id="sync-card">
+          <div class="card-head">
+            <h3 class="card-title">부부 실시간 동기화</h3>
+            <span class="badge gray" id="sync-card-badge">꺼짐</span>
+          </div>
+          <p class="hint" id="sync-card-desc">두 분이 정한 방 코드로 연결하면, 한쪽 폰에서 고친 가계부가 다른 폰에 바로 반영돼요. 지금은 이 기기에만 저장하고 있어요.</p>
+          <button class="btn ghost small block" id="sync-card-btn">동기화 설정 열기</button>
         </div>
-        <p class="hint">곳간 잔액이 500만 원을 넘으면, 넘는 금액만큼 투자에 쓸 수 있어요.</p>
-        <div class="inline-field">
-          <input id="barn-input" inputmode="numeric" value="0" aria-label="곳간 잔액">
-          <span class="unit">원</span>
-        </div>
-        <div class="chip-row">
-          <button class="chip" data-barn="5000000">500만</button>
-          <button class="chip" data-barn="7000000">700만</button>
-          <button class="chip" data-barn="10000000">1,000만</button>
-          <button class="chip" data-barn="0">비우기</button>
-        </div>
-        <div class="barn-result" id="barn-result"></div>
-      </div>
 
-      <div class="mini-grid">
-        <button class="mini-card wide" data-goto="fixed" id="mini-mortgage-card">
-          <span class="mini-label">남은 아파트 대출 잔액</span>
-          <strong id="mini-mortgage">0원</strong>
-          <span class="mini-sub" id="mini-mortgage-sub">대출 조건을 입력해 주시면 계산돼요</span>
-        </button>
-        <button class="mini-card" data-goto="savings">
-          <span class="mini-label">자동이체</span>
-          <strong id="mini-transfer">0 / 6</strong>
-          <span class="mini-sub" id="mini-transfer-amt">0원 완료</span>
-        </button>
-        <button class="mini-card" data-goto="savings">
-          <span class="mini-label" id="mini-loan-label">회수금</span>
-          <strong id="mini-loan">0%</strong>
-          <span class="mini-sub" id="mini-loan-amt">0원 회수</span>
-        </button>
-      </div>
+        <div class="card" id="barn-card">
+          <div class="card-head">
+            <h3 class="card-title">곳간 500만 원 초과분</h3>
+            <span class="badge">투자 재원</span>
+          </div>
+          <p class="hint">곳간 잔액이 500만 원을 넘으면, 넘는 금액만큼 투자에 쓸 수 있어요.</p>
+          <div class="inline-field">
+            <input id="barn-input" inputmode="numeric" value="0" aria-label="곳간 잔액">
+            <span class="unit">원</span>
+          </div>
+          <div class="chip-row">
+            <button class="chip" data-barn="5000000">500만</button>
+            <button class="chip" data-barn="7000000">700만</button>
+            <button class="chip" data-barn="10000000">1,000만</button>
+            <button class="chip" data-barn="0">비우기</button>
+          </div>
+          <div class="barn-result" id="barn-result"></div>
+        </div>
 
-      <div class="card note-card">
-        <p>항목 금액은 눌러서 바로 고칠 수 있고, 입력한 내용은 이 기기에 저장됩니다. <b>부부 실시간 동기화</b>를 켜면 두 분 폰에 함께 반영되고, <b>고정지출</b> 탭의 '가계부 데이터'에서 .json 파일로 내보내거나 다시 불러올 수 있어요.</p>
+        <div class="mini-grid">
+          <button class="mini-card wide" data-goto="fixed" id="mini-mortgage-card">
+            <span class="mini-label">남은 아파트 대출 잔액</span>
+            <strong id="mini-mortgage">0원</strong>
+            <span class="mini-sub" id="mini-mortgage-sub">대출 조건을 입력해 주시면 계산돼요</span>
+          </button>
+          <button class="mini-card" data-goto="savings">
+            <span class="mini-label">자동이체</span>
+            <strong id="mini-transfer">0 / 6</strong>
+            <span class="mini-sub" id="mini-transfer-amt">0원 완료</span>
+          </button>
+          <button class="mini-card" data-goto="savings">
+            <span class="mini-label" id="mini-loan-label">회수금</span>
+            <strong id="mini-loan">0%</strong>
+            <span class="mini-sub" id="mini-loan-amt">0원 회수</span>
+          </button>
+        </div>
+
+        <div class="card note-card">
+          <div class="card-head"><h3 class="card-title">데이터 백업 · 불러오기</h3><span class="badge gray">파일</span></div>
+          <p>항목 금액은 눌러서 바로 고칠 수 있고, 입력한 내용은 이 기기에 저장됩니다. <b>부부 실시간 동기화</b>를 켜면 두 분 폰에 함께 반영돼요.</p>
+          <button class="btn ghost small block" type="button" data-goto="fixed" style="margin-top:10px">가계부 데이터 열기 · 내보내기</button>
+        </div>
       </div>
     </section>
 
@@ -1243,6 +1319,7 @@ function renderIncomes(){
 function openIncomeForm(id){
   var form = $('income-form');
   if(!form) return;
+  expandMore();
   incomeEditId = id || null;
   var it = id ? state.incomes.filter(function(x){ return x.id === id; })[0] : null;
   form.hidden = false;
@@ -1259,6 +1336,9 @@ function openIncomeForm(id){
   if(delBtn) delBtn.hidden = !it;
   if(it) toast('아래에서 입금 내역을 고쳐 주세요');
   try{ form.scrollIntoView({block: 'nearest', behavior: 'smooth'}); }catch(err){}
+  if(!it && nameEl){
+    try{ nameEl.focus({preventScroll: true}); }catch(err2){}
+  }
 }
 
 function closeIncomeForm(){
@@ -1832,18 +1912,34 @@ function updateSummaries(){
   setText('flow-final', fin < 0 ? '초과 ' + won(-fin) : won(fin));
   setText('income-total', won(inc));
 
+  /* 초간단 첫 화면 — 큰 숫자 아래 4칸 타일 */
+  setText('tile-income', won(inc));
+  setText('tile-fixedsave', won(fx + sv));
+  setText('tile-var', won(vr));
+  setText('tile-final', inc === 0 ? '—' : (fin < 0 ? '초과 ' + won(-fin) : won(fin)));
+  var finalTile = $('tile-final-box');
+  if(finalTile) finalTile.classList.toggle('neg', inc > 0 && fin < 0);
+
   var spareCard = $('spare-card');
   var emptyIncome = inc === 0;
+  var emptyBox = $('spare-empty');
+  if(emptyBox) emptyBox.hidden = !emptyIncome;
+  ['spare-free', 'spare-free-sub'].forEach(function(id){
+    var el = $(id);
+    if(el) el.hidden = emptyIncome;
+  });
+  setText('spare-label', emptyIncome ? '이번 달 생활비' : '고정·저축 빼고 남은 돈');
+  setText('spare-badge', emptyIncome ? '입금 없음' : '이번 달');
   if(spareCard){
     spareCard.classList.toggle('empty', emptyIncome);
     spareCard.classList.toggle('neg', !emptyIncome && (free < 0 || fin < 0));
   }
   var finalRow = $('flow-final-row');
-  if(finalRow) finalRow.classList.toggle('neg', !emptyIncome && fin < 0);
+  if(finalRow) finalRow.classList.toggle('neg', fin < 0);
   var freeRow = $('flow-free');
   if(freeRow){
     var freeWrap = freeRow.parentNode;
-    if(freeWrap) freeWrap.classList.toggle('neg', !emptyIncome && free < 0);
+    if(freeWrap) freeWrap.classList.toggle('neg', free < 0);
   }
   var sub = '';
   if(inc === 0){
@@ -1927,7 +2023,41 @@ function switchTab(name){
   document.querySelectorAll('.view').forEach(function(v){
     v.hidden = (v.id !== 'view-' + name);
   });
+  if(name === 'home') collapseMore();
   window.scrollTo(0, 0);
+}
+
+/* =========================================================
+   한눈에 "자세한 내역 · 설정 더보기" 접이식 (기본 접힘)
+   ========================================================= */
+var moreAnim = null;
+function expandMore(){
+  var p = $('more-panel'), b = $('more-toggle');
+  if(!p) return;
+  if(moreAnim){ try{ moreAnim.cancel(); }catch(err){} moreAnim = null; }
+  if(b) b.setAttribute('aria-expanded', 'true');
+  if(p.hidden) p.hidden = false;
+  try{
+    if(p.animate) p.animate(
+      [{opacity: 0, transform: 'translateY(-6px)'}, {opacity: 1, transform: 'translateY(0)'}],
+      {duration: 190, easing: 'ease-out'});
+  }catch(err){}
+}
+function collapseMore(){
+  var p = $('more-panel'), b = $('more-toggle');
+  if(!p || p.hidden) return;
+  if(b) b.setAttribute('aria-expanded', 'false');
+  if(!p.animate){ p.hidden = true; return; }
+  try{
+    var anim = p.animate([{opacity: 1}, {opacity: 0}], {duration: 130, easing: 'ease-in'});
+    moreAnim = anim;
+    anim.onfinish = function(){ if(moreAnim === anim){ p.hidden = true; moreAnim = null; } };
+  }catch(err){ p.hidden = true; }
+}
+function toggleMore(){
+  var b = $('more-toggle');
+  var open = !!(b && b.getAttribute('aria-expanded') === 'true');
+  if(open) collapseMore(); else expandMore();
 }
 
 /* =========================================================
@@ -2602,9 +2732,21 @@ function wire(){
     });
   }
 
+  /* ---------- 초간단 첫 화면: 지출 바로 기록 · 자세히 보기 ---------- */
+  var quickExp = $('quick-expense-btn');
+  if(quickExp) quickExp.addEventListener('click', function(){
+    switchTab('variable');
+    var amt = $('ex-amount');
+    if(amt){ try{ amt.focus(); }catch(err){} }
+  });
+  var moreBtn = $('more-toggle');
+  if(moreBtn) moreBtn.addEventListener('click', toggleMore);
+
   /* ---------- 입금 내역 ---------- */
   var incAdd = $('income-add-btn');
   if(incAdd) incAdd.addEventListener('click', function(){ openIncomeForm(null); });
+  var incAdd2 = $('income-add-btn-inner');
+  if(incAdd2) incAdd2.addEventListener('click', function(){ openIncomeForm(null); });
   var incCancel = $('income-cancel');
   if(incCancel) incCancel.addEventListener('click', closeIncomeForm);
   var incSave = $('income-save');
