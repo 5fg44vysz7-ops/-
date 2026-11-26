@@ -2701,6 +2701,9 @@ function setNugaStatus(msg, isErr){
   if(!el) return;
   el.textContent = msg || '';
   el.classList.toggle('err', !!isErr);
+  /* 오류 안내일 때는 [다시 읽기]·[전체 지우기] 버튼을 보이게 (담긴 내역이 없어도) */
+  var acts = $('nuga-actions');
+  if(acts && isErr) acts.hidden = false;
 }
 /* 0.1% 단위 반올림 합이 정확히 100.0%가 되도록 나눈다 */
 function nugaAllocatePct(list, total){
@@ -2914,13 +2917,16 @@ function nugaRenderList(){
 }
 function renderNuga(){
   var has = nugaMonthKeys().length > 0;
-  ['nuga-months-card', 'nuga-summary-card', 'nuga-list-card', 'nuga-actions'].forEach(function(id){
+  ['nuga-months-card', 'nuga-summary-card', 'nuga-list-card'].forEach(function(id){
     var el = $(id);
     if(el) el.hidden = !has;
   });
+  var stEl = $('nuga-status');
+  var statusErr = !!(stEl && stEl.classList.contains('err'));
+  var actions = $('nuga-actions');
+  if(actions) actions.hidden = !has && !statusErr;
   var emptyCard = $('nuga-empty-card');
   if(emptyCard) emptyCard.hidden = has;
-  var stEl = $('nuga-status');
   if(!has){
     ['nuga-cat-card', 'nuga-payer-card', 'nuga-trend-card', 'nuga-table-card'].forEach(function(id){
       var el = $(id);
@@ -3048,11 +3054,15 @@ function nugaImportFiles(files){
   nugaLastFiles = list;
   var retry = $('nuga-retry');
   if(retry) retry.hidden = true;
-  var parsedAll = [], failed = 0, i = 0;
+  var parsedAll = [], failed = 0, libFail = false, i = 0;
   function finish(){
     if(!parsedAll.length){
       if(retry) retry.hidden = !nugaLastFiles.length;
-      setNugaStatus('누가 가계부 양식(날짜·구분·카테고리·메모·결제자·금액)을 찾지 못했어요. 누가 앱에서 내보낸 파일인지 확인해 주세요.', true);
+      if(libFail){
+        setNugaStatus('엑셀 파일을 열려면 인터넷에서 엑셀 읽기 도구(SheetJS)를 한 번 받아 와야 해요. 연결을 확인한 뒤 [다시 읽기]를 눌러 주세요.', true);
+      }else{
+        setNugaStatus('누가 가계부 양식(날짜·구분·카테고리·메모·결제자·금액)을 찾지 못했어요. 누가 앱에서 내보낸 파일인지 확인해 주세요.', true);
+      }
       return;
     }
     var touched = nugaApplyMonths(parsedAll);
@@ -3080,7 +3090,11 @@ function nugaImportFiles(files){
     nugaReadFile(f).then(function(parsed){
       parsed.forEach(function(p){ parsedAll.push(p); });
       step();
-    }, function(){ failed++; step(); });
+    }, function(err){
+      failed++;
+      if(err && String(err.message || '').indexOf('xlsx-unavailable') >= 0) libFail = true;
+      step();
+    });
   }
   step();
 }
