@@ -5665,6 +5665,19 @@ function syncPickLater(){
 function syncApplyRemote(raw){
   sync.applying = true;
   var keepMonth = state && state.activeMonth;
+  /* 예전 버전 앱(월별 보관 전)이 올린 문서에는 monthlyRecords 가 없다.
+     그때 다른 달 보관 기록까지 지워지지 않도록, 상대가 올린 달이 아닌 달은 이 폰 기록을 남긴다. */
+  if(raw && typeof raw === 'object' && (!raw.monthlyRecords || typeof raw.monthlyRecords !== 'object') && state && state.monthlyRecords){
+    var incoming = isYmKey(raw.activeMonth) ? raw.activeMonth : curYm();
+    var keepMonths = {}, any = false;
+    Object.keys(state.monthlyRecords).forEach(function(k){
+      if(isYmKey(k) && k !== incoming){ keepMonths[k] = clone(state.monthlyRecords[k]); any = true; }
+    });
+    if(any){
+      raw = clone(raw);
+      raw.monthlyRecords = keepMonths;
+    }
+  }
   try{
     localStorage.setItem(LS_KEY, JSON.stringify(raw));
   }catch(err){}
