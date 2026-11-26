@@ -376,7 +376,7 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 .sheet .btn.block{margin-top:2px}
 .sheet-foot{margin:12px 0 0;font-size:11px;color:#9aa3ad;line-height:1.68}
 /* ---------- 초간단 첫 화면 (한눈에) ---------- */
-.home-hero{padding:20px 18px 16px}
+.home-hero{padding:16px 16px 14px}
 .hero-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .home-hero .spare-label{font-size:13px}
 .home-hero .spare-amount{font-size:38px;line-height:1.12;letter-spacing:-1.5px;margin:6px 0 0}
@@ -384,8 +384,8 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 .home-empty{padding:8px 0 2px}
 .home-empty strong{display:block;font-size:19px;font-weight:800;letter-spacing:-.6px;color:#4e5968}
 .home-empty span{display:block;margin-top:6px;font-size:12.5px;color:var(--sub);line-height:1.55}
-.money-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
-.money-tile{background:rgba(255,255,255,.85);border-radius:14px;padding:10px 12px;min-width:0}
+.money-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.money-tile{background:rgba(255,255,255,.85);border-radius:14px;padding:9px 11px;min-width:0}
 button.money-tile{display:block;width:100%;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
   -webkit-tap-highlight-color:transparent;transition:background .12s ease,transform .12s ease}
 button.money-tile:hover{background:#fff}
@@ -397,12 +397,14 @@ button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;f
 @keyframes tileFlash{0%{box-shadow:0 0 0 3px rgba(49,130,246,.32)}70%{box-shadow:0 0 0 3px rgba(49,130,246,.12)}100%{box-shadow:0 0 0 3px rgba(49,130,246,0)}}
 #income-card.tile-flash{animation:tileFlash 1.4s ease-out}
 .money-tile strong{display:block;margin-top:3px;font-size:15px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.money-tile.final{grid-column:1 / -1;background:#fff;box-shadow:inset 0 0 0 1.5px #cfe6ff;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.money-tile.final span{font-size:12px}
-.money-tile.final strong{margin-top:0;font-size:17px}
+.money-tile.final{background:#fff;box-shadow:inset 0 0 0 1.5px #cfe6ff;display:flex;flex-direction:column;justify-content:center;gap:0}
+.money-tile.final span{font-size:10.5px;line-height:1.3;white-space:normal;color:#4e5968}
+.money-tile.final strong{margin-top:2px;font-size:15px}
+#extra-invest-card{scroll-margin-top:126px}
+#extra-invest-card.tile-flash{animation:tileFlash 1.4s ease-out}
 .money-tile.final.neg strong{color:#e5483c}
 .spare-card.empty .money-tile{background:rgba(255,255,255,.9)}
-.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .home-actions .btn{padding:14px 6px;font-size:14px}
 #income-add-btn{background:#fff;color:#1b64da;box-shadow:inset 0 0 0 1.5px #bfd8ff}
 #income-add-btn:active{background:#f2f8ff}
@@ -590,7 +592,8 @@ button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;f
           <button class="money-tile" type="button" data-goto="fixed" aria-label="고정지출 · 상세 보기"><span>고정지출</span><strong id="tile-fixed">0원</strong></button>
           <button class="money-tile" type="button" data-goto="savings" aria-label="고정저축 · 상세 보기"><span>고정저축</span><strong id="tile-savings">0원</strong></button>
           <button class="money-tile" type="button" data-goto="variable" aria-label="쓴 돈 · 변동지출 내역 보기"><span>쓴 돈</span><strong id="tile-var">0원</strong></button>
-          <div class="money-tile final" id="tile-final-box"><span>쓴 돈 빼고 남은 돈</span><strong id="tile-final">0원</strong></div>
+          <button class="money-tile" type="button" data-tile="extra" aria-label="추가투자 · 잉여금 추가 투자 내역 보기"><span>추가투자</span><strong id="tile-extra">0원</strong></button>
+          <div class="money-tile final" id="tile-final-box"><span>쓴 돈·추가투자 빼고 남은 돈</span><strong id="tile-final">0원</strong></div>
         </div>
         <!-- 이전 버전 호환: 고정지출+저축 합계 타일(화면에는 보이지 않음) -->
         <span id="tile-fixedsave" hidden>0원</span>
@@ -670,7 +673,8 @@ button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;f
             <div class="flow-row minus"><span>고정저축</span><strong id="flow-save">0원</strong></div>
             <div class="flow-row sum"><span>= 들어온 돈 − 고정지출 − 고정저축</span><strong id="flow-free">0원</strong></div>
             <div class="flow-row minus"><span>쓴 돈</span><strong id="flow-var">0원</strong></div>
-            <div class="flow-row final" id="flow-final-row"><span>= 쓴 돈 빼고 남은 돈</span><strong id="flow-final">0원</strong></div>
+            <div class="flow-row minus"><span>추가투자</span><strong id="flow-xi">0원</strong></div>
+            <div class="flow-row final" id="flow-final-row"><span>= 쓴 돈·추가투자 빼고 남은 돈</span><strong id="flow-final">0원</strong></div>
           </div>
           <p class="flow-foot" id="home-save-line">매달 고정저축하는 돈 <b id="home-save">0원</b>은 따로 모으는 돈이라, 쓸 수 있는 돈에서 빼고 계산해요.</p>
         </div>
@@ -777,6 +781,30 @@ button.money-tile > span::after{content:'\203A';margin-left:3px;font-size:13px;f
           <span class="hint small">항목을 누르면 이름·금액·소유자를 고칠 수 있어요</span>
           <button class="btn ghost tiny" id="savings-reset">기본값</button>
         </div>
+      </div>
+
+      <div class="card" id="extra-invest-card">
+        <div class="card-head">
+          <h3 class="card-title">추가투자 내역</h3>
+          <strong id="xi-total" style="font-size:15px;font-variant-numeric:tabular-nums">0원</strong>
+        </div>
+        <p class="hint small" style="margin-bottom:10px">잉여금 중 남은 금액을 더 투자한 내역이에요. 기록하면 첫 화면 <b>추가투자</b> 칸에 더해지고 <b>남은 돈</b>에서 빠져요. 내역을 누르면 금액·종목·날짜·메모를 고칠 수 있어요.</p>
+
+        <div class="rec-form" id="xi-form">
+          <p class="rec-form-title">추가투자 기록하기</p>
+          <div class="field amount">
+            <input id="xi-amount" inputmode="numeric" placeholder="0" aria-label="추가투자 금액">
+            <span class="unit">원</span>
+          </div>
+          <p class="rec-hint" id="xi-amount-hint">투자한 금액을 원 단위로 입력해 주세요</p>
+          <div class="field"><input id="xi-name" maxlength="20" placeholder="어디에 투자했나요 (예: SCHD)" aria-label="투자 종목"></div>
+          <div class="chip-row" id="xi-quick"></div>
+          <div class="field date"><span class="f-label">매수일</span><input type="date" id="xi-date" aria-label="투자한 날짜"></div>
+          <div class="field"><input id="xi-memo" maxlength="30" placeholder="메모 (선택) · 예: 11월 잉여금" aria-label="추가투자 메모"></div>
+          <button class="btn primary block" id="xi-add">+ 추가투자 기록</button>
+        </div>
+
+        <ul class="tx-list" id="xi-list"></ul>
       </div>
 
       <div class="card">
@@ -1185,6 +1213,7 @@ var DEFAULT_STATE = {
   barn: 0,
   incomes: [],
   nuga: null,
+  extraInvestments: [],
   expenses: []
 };
 
@@ -1277,6 +1306,19 @@ function loadState(){
         };
       });
     }
+    /* extraInvestments(추가투자)도 나중에 추가된 키 — 없는 예전 .json 파일은 []로 읽는다 */
+    base.extraInvestments = [];
+    if(Array.isArray(s.extraInvestments)){
+      base.extraInvestments = s.extraInvestments.filter(function(it){ return it && typeof it === 'object'; }).map(function(it, i){
+        return {
+          id: String(it.id || 'xi' + (i + 1)),
+          date: /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : '',
+          name: String(it.name || '추가투자').slice(0, 20),
+          amount: Math.max(0, Math.round(num(it.amount))),
+          memo: String(it.memo || '').slice(0, 30)
+        };
+      }).filter(function(it){ return it.amount > 0; });
+    }
     if(Array.isArray(s.expenses)) base.expenses = s.expenses.filter(function(e){ return e && typeof e === 'object'; }).map(function(e){ return {id: String(e.id || uid()), date: String(e.date || ''), category: CATEGORIES.indexOf(e.category) >= 0 ? e.category : '기타', memo: String(e.memo || ''), amount: Math.max(0, num(e.amount))}; });
     /* nuga(누가 분석)는 나중에 추가된 키 — 없는 예전 파일은 null(빈 상태)로 읽는다 */
     base.nuga = normalizeNuga(s.nuga);
@@ -1368,6 +1410,7 @@ function totalSavings(){ return state.savings.reduce(function(a, b){ return a + 
 function totalFixed(){ return state.fixed.reduce(function(a, b){ return a + num(b.amount); }, 0); }
 function totalVariable(){ return state.expenses.reduce(function(a, b){ return a + num(b.amount); }, 0); }
 function totalIncome(){ return state.incomes.reduce(function(a, b){ return a + num(b.amount); }, 0); }
+function totalExtraInvestments(){ return (state.extraInvestments || []).reduce(function(a, b){ return a + num(b.amount); }, 0); }
 
 /* =========================================================
    한눈에
@@ -2078,6 +2121,127 @@ function deleteLoanRecord(id){
 }
 
 /* =========================================================
+   추가투자 (잉여금 추가 투자)
+   - 첫 화면 '추가투자 ›' 타일 → 저축 탭의 '추가투자 내역' 카드로 이동
+   - state.extraInvestments: {id, date, name, amount, memo}
+   - 남은 돈 = 들어온 돈 − 고정지출 − 고정저축 − 쓴 돈 − 추가투자
+   ========================================================= */
+var XI_PRESETS = ['SCHD', 'QQQM', 'VOO', '배당주'];
+var xiEditId = null;
+
+function extraInvestmentsSorted(){
+  return (state.extraInvestments || []).slice().sort(function(a, b){
+    var d = String(b.date || '').localeCompare(String(a.date || ''));
+    if(d !== 0) return d;
+    var amt = num(b.amount) - num(a.amount);
+    if(amt !== 0) return amt;
+    return String(b.id).localeCompare(String(a.id));
+  });
+}
+function xiAmountHint(v){
+  var n = Math.round(num(v));
+  if(!n) return '투자한 금액을 원 단위로 입력해 주세요';
+  return fmt(n) + '원 = ' + manwon(n);
+}
+function xiPresetChipsHTML(active){
+  return XI_PRESETS.map(function(p){
+    return '<button class="chip' + (p === active ? ' active' : '') + '" type="button" data-xi-preset="' + esc(p) + '">' + esc(p) + '</button>';
+  }).join('');
+}
+function renderExtraInvestQuick(){
+  var box = $('xi-quick');
+  if(!box) return;
+  box.innerHTML = xiPresetChipsHTML('');
+  box.hidden = false;
+}
+function renderExtraInvestments(){
+  var dateEl = $('xi-date');
+  if(dateEl && !dateEl.value) dateEl.value = todayISO();
+  renderExtraInvestQuick();
+  var list = $('xi-list');
+  if(!list) return;
+  var rows = extraInvestmentsSorted();
+  if(!rows.length){
+    xiEditId = null;
+    list.innerHTML = '<li class="empty">아직 추가투자 내역이 없어요. 잉여금이 남으면 위에 어디에 얼마를 더 투자했는지 기록해 보세요.</li>';
+    return;
+  }
+  list.innerHTML = rows.map(function(r){
+    if(xiEditId === r.id) return xiEditorHTML(r);
+    var sub = [r.date || '날짜 없음', r.memo].filter(function(x){ return x; }).join(' · ');
+    return '<li class="tx-item">' +
+      '<button class="tx-open" data-xi-edit="' + esc(r.id) + '" aria-label="' + esc(r.name) + ' ' + esc(won(r.amount)) + ' 추가투자 수정">' +
+        '<span class="tx-main"><span class="tx-title">' + esc(r.name) + '</span>' +
+        '<span class="tx-date">' + esc(sub) + '</span></span>' +
+        '<span class="tx-amt">' + won(r.amount) + '</span>' +
+      '</button>' +
+      '<button class="tx-del" data-xi-del="' + esc(r.id) + '" aria-label="삭제">✕</button>' +
+    '</li>';
+  }).join('');
+}
+function xiEditorHTML(r){
+  return '<li class="tx-item editing">' +
+    '<div class="tx-editor">' +
+      '<div class="field amount"><input class="xi-edit-amount" value="' + fmt(r.amount) + '" inputmode="numeric" aria-label="추가투자 금액"><span class="unit">원</span></div>' +
+      '<div class="field"><input class="xi-edit-name" maxlength="20" value="' + esc(r.name) + '" aria-label="투자 종목"></div>' +
+      '<div class="chip-row">' + xiPresetChipsHTML(r.name) + '</div>' +
+      '<div class="field date"><input type="date" class="xi-edit-date" value="' + esc(r.date || '') + '" aria-label="투자한 날짜"></div>' +
+      '<div class="field"><input class="xi-edit-memo" maxlength="30" value="' + esc(r.memo) + '" placeholder="메모 (선택)" aria-label="메모"></div>' +
+      '<div class="row gap">' +
+        '<button class="btn primary small" type="button" data-xi-save="' + esc(r.id) + '">저장</button>' +
+        '<button class="btn ghost small" type="button" data-xi-cancel="1">취소</button>' +
+        '<button class="btn ghost small" type="button" data-xi-del="' + esc(r.id) + '">✕ 삭제</button>' +
+      '</div>' +
+    '</div>' +
+  '</li>';
+}
+function addExtraInvestment(){
+  var amtEl = $('xi-amount'), nameEl = $('xi-name'), dateEl = $('xi-date'), memoEl = $('xi-memo');
+  var amount = amtEl ? Number(amtEl.value.replace(/[^0-9]/g, '')) : 0;
+  if(!amount){ toast('추가투자 금액을 입력해 주세요'); if(amtEl) amtEl.focus(); return; }
+  var name = (nameEl && nameEl.value.trim()) || '추가투자';
+  var date = (dateEl && dateEl.value) ? dateEl.value : todayISO();
+  var memo = memoEl ? memoEl.value.trim().slice(0, 30) : '';
+  if(!Array.isArray(state.extraInvestments)) state.extraInvestments = [];
+  state.extraInvestments.push({id: uid(), date: date, name: name.slice(0, 20), amount: amount, memo: memo});
+  saveState();
+  if(amtEl) amtEl.value = '';
+  if(memoEl) memoEl.value = '';
+  setText('xi-amount-hint', xiAmountHint(0));
+  renderExtraInvestments();
+  updateSummaries();
+  toast(manwon(amount) + ' 추가투자를 기록했어요');
+}
+function saveExtraInvestment(id){
+  var row = (state.extraInvestments || []).filter(function(r){ return r.id === id; })[0];
+  if(!row) return;
+  var amtEl = document.querySelector('#xi-list .xi-edit-amount');
+  var nameEl = document.querySelector('#xi-list .xi-edit-name');
+  var dateEl = document.querySelector('#xi-list .xi-edit-date');
+  var memoEl = document.querySelector('#xi-list .xi-edit-memo');
+  var amount = amtEl ? Number(amtEl.value.replace(/[^0-9]/g, '')) : 0;
+  if(!amount){ toast('추가투자 금액을 입력해 주세요'); if(amtEl) amtEl.focus(); return; }
+  row.amount = amount;
+  row.name = ((nameEl && nameEl.value.trim()) || row.name || '추가투자').slice(0, 20);
+  row.date = (dateEl && dateEl.value) ? dateEl.value : (row.date || todayISO());
+  row.memo = memoEl ? memoEl.value.trim().slice(0, 30) : '';
+  xiEditId = null;
+  saveState();
+  renderExtraInvestments();
+  updateSummaries();
+  toast('추가투자 내역을 고쳤어요');
+}
+function deleteExtraInvestment(id){
+  if(!window.confirm('이 추가투자 내역을 지울까요?')) return;
+  state.extraInvestments = (state.extraInvestments || []).filter(function(r){ return r.id !== id; });
+  if(xiEditId === id) xiEditId = null;
+  saveState();
+  renderExtraInvestments();
+  updateSummaries();
+  toast('삭제했어요');
+}
+
+/* =========================================================
    아파트 주택담보대출 트래커
    ========================================================= */
 var mgShowAll = false;
@@ -2314,9 +2478,10 @@ function renderExtraLoans(){
    ========================================================= */
 function updateSummaries(){
   var sv = totalSavings(), fx = totalFixed(), vr = totalVariable(), inc = totalIncome();
+  var xi = totalExtraInvestments();   /* 잉여금에서 더 투자한 돈 */
   var tot = sv + fx + vr;
   var free = inc - fx - sv;      /* 고정 차감 후 여윳돈 */
-  var fin = free - vr;           /* 변동지출 포함 최종 남는 돈 */
+  var fin = free - vr - xi;      /* 변동지출·추가투자 포함 최종 남는 돈 */
 
   setText('home-save', manwon(sv));
   setText('home-sub', '고정지출 ' + manwon(fx) + ' · 변동지출 ' + won(vr));
@@ -2335,8 +2500,10 @@ function updateSummaries(){
   setText('flow-save', minusWon(sv));
   setText('flow-free', signedWon(free));
   setText('flow-var', minusWon(vr));
+  setText('flow-xi', minusWon(xi));
   setText('flow-final', fin < 0 ? '초과 ' + won(-fin) : won(fin));
   setText('income-total', won(inc));
+  setText('xi-total', won(xi));
 
   /* 초간단 첫 화면 — 큰 숫자 아래 타일 (고정지출·고정저축 따로) */
   setText('tile-income', won(inc));
@@ -2344,6 +2511,7 @@ function updateSummaries(){
   setText('tile-savings', won(sv));
   setText('tile-fixedsave', won(fx + sv));   /* 이전 버전 합계 타일(화면에는 숨김) */
   setText('tile-var', won(vr));
+  setText('tile-extra', won(xi));
   setText('tile-final', inc === 0 ? '—' : (fin < 0 ? '초과 ' + won(-fin) : won(fin)));
   var finalTile = $('tile-final-box');
   if(finalTile) finalTile.classList.toggle('neg', inc > 0 && fin < 0);
@@ -2357,7 +2525,7 @@ function updateSummaries(){
     if(el) el.hidden = emptyIncome;
   });
   /* 아직 아무것도 없는 처음 상태에서는 0원 타일을 감춰 첫 화면을 더 단순하게 */
-  var pristine = sv === 0 && fx === 0 && vr === 0 && !state.expenses.length && !state.incomes.length;
+  var pristine = sv === 0 && fx === 0 && vr === 0 && xi === 0 && !state.expenses.length && !state.incomes.length && !(state.extraInvestments || []).length;
   var moneyGrid = document.querySelector('.money-grid');
   if(moneyGrid) moneyGrid.hidden = pristine;
   var heroTop = document.querySelector('.hero-top');
@@ -2426,7 +2594,7 @@ function updateSummaries(){
   if(bar) bar.style.width = Math.max(0, Math.min(100, loanPct)) + '%';
 
   var banner = $('setup-banner');
-  if(banner) banner.hidden = !(sv === 0 && fx === 0 && vr === 0 && !state.expenses.length && !state.incomes.length);
+  if(banner) banner.hidden = !(sv === 0 && fx === 0 && vr === 0 && xi === 0 && !state.expenses.length && !state.incomes.length && !(state.extraInvestments || []).length);
 }
 
 function renderAll(){
@@ -2441,6 +2609,7 @@ function renderAll(){
   renderFixed();
   renderTransfers();
   renderLoan();
+  renderExtraInvestments();
   renderMortgage();
   renderExtraLoans();
   renderBarn();
@@ -3170,6 +3339,24 @@ function openTile(name){
       try{ card.setAttribute('tabindex', '-1'); card.focus({preventScroll: true}); }catch(err3){}
     };
     if(window.requestAnimationFrame) window.requestAnimationFrame(go); else go();
+    return;
+  }
+  if(name === 'extra'){
+    switchTab('savings');
+    var xiCard = $('extra-invest-card');
+    if(!xiCard) return;
+    var goXi = function(){
+      try{ xiCard.scrollIntoView({block: 'start', behavior: 'smooth'}); }
+      catch(err){ window.scrollTo(0, Math.max(0, xiCard.offsetTop - 96)); }
+      try{
+        xiCard.classList.remove('tile-flash');
+        void xiCard.offsetWidth;
+        xiCard.classList.add('tile-flash');
+        setTimeout(function(){ xiCard.classList.remove('tile-flash'); }, 1500);
+      }catch(err2){}
+      try{ xiCard.setAttribute('tabindex', '-1'); xiCard.focus({preventScroll: true}); }catch(err3){}
+    };
+    if(window.requestAnimationFrame) window.requestAnimationFrame(goXi); else goXi();
     return;
   }
   switchTab(name);
@@ -4264,6 +4451,60 @@ function wire(){
     });
   });
 
+  /* ---------- 추가투자 내역 (추가·수정·삭제) ---------- */
+  var xiList = $('xi-list');
+  if(xiList){
+    xiList.addEventListener('click', function(e){
+      if(!e.target.closest) return;
+      var del = e.target.closest('[data-xi-del]');
+      if(del){ deleteExtraInvestment(del.getAttribute('data-xi-del')); return; }
+      var cancel = e.target.closest('[data-xi-cancel]');
+      if(cancel){ xiEditId = null; renderExtraInvestments(); return; }
+      var save = e.target.closest('[data-xi-save]');
+      if(save){ saveExtraInvestment(save.getAttribute('data-xi-save')); return; }
+      var preset = e.target.closest('[data-xi-preset]');
+      if(preset){
+        var nameIn = document.querySelector('#xi-list .xi-edit-name');
+        if(nameIn) nameIn.value = preset.getAttribute('data-xi-preset');
+        xiList.querySelectorAll('[data-xi-preset]').forEach(function(c){ c.classList.toggle('active', c === preset); });
+        return;
+      }
+      var edit = e.target.closest('[data-xi-edit]');
+      if(edit){
+        xiEditId = edit.getAttribute('data-xi-edit');
+        renderExtraInvestments();
+        var box = document.querySelector('#xi-list .tx-item.editing');
+        if(box){ try{ box.scrollIntoView({block: 'nearest', behavior: 'smooth'}); }catch(err){} }
+      }
+    });
+    xiList.addEventListener('input', function(e){
+      var el = e.target.closest ? e.target.closest('.xi-edit-amount') : null;
+      if(!el) return;
+      var digits = el.value.replace(/[^0-9]/g, '');
+      el.value = digits ? Number(digits).toLocaleString('ko-KR') : '';
+    });
+  }
+  var xiAmt = $('xi-amount');
+  if(xiAmt){
+    xiAmt.addEventListener('input', function(){
+      var digits = xiAmt.value.replace(/[^0-9]/g, '');
+      xiAmt.value = digits ? Number(digits).toLocaleString('ko-KR') : '';
+      setText('xi-amount-hint', xiAmountHint(digits));
+    });
+  }
+  var xiQuick = $('xi-quick');
+  if(xiQuick){
+    xiQuick.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('[data-xi-preset]') : null;
+      if(!b) return;
+      var nameIn = $('xi-name');
+      if(nameIn) nameIn.value = b.getAttribute('data-xi-preset') || '';
+      xiQuick.querySelectorAll('[data-xi-preset]').forEach(function(c){ c.classList.toggle('active', c === b); });
+    });
+  }
+  var xiAdd = $('xi-add');
+  if(xiAdd) xiAdd.addEventListener('click', addExtraInvestment);
+
   /* ---------- 가계부 데이터 파일 ---------- */
   var importer = $('data-import');
   if(importer){
@@ -4661,6 +4902,7 @@ function syncFingerprint(s){
     extraLoans: (s.extraLoans || []).map(function(e){ return [String(e.id || ''), String(e.name || ''), amt(e.amount), String(e.memo || '')]; }),
     barn: amt(s.barn),
     incomes: (s.incomes || []).map(function(i){ return [String(i.id || ''), String(i.owner || ''), String(i.name || ''), amt(i.amount), String(i.memo || ''), String(i.date || '')]; }),
+    extraInvestments: (s.extraInvestments || []).map(function(x){ return [String(x.id || ''), String(x.date || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; }),
     expenses: (s.expenses || []).map(function(e){ return [String(e.id || ''), String(e.date || ''), String(e.category || ''), String(e.memo || ''), amt(e.amount)]; }),
     nuga: nugaSig(s)
   };
@@ -4671,6 +4913,7 @@ function syncHasData(s){
   if((s.incomes || []).length || (s.expenses || []).length) return true;
   if((s.transfers || []).length) return true;
   if((s.extraLoans || []).length) return true;
+  if((s.extraInvestments || []).length) return true;
   if((s.savings || []).some(function(x){ return num(x.amount) > 0; })) return true;
   if((s.fixed || []).some(function(x){ return num(x.amount) > 0; })) return true;
   if(num(s.barn) > 0) return true;
@@ -4739,6 +4982,7 @@ function syncSections(s){
     extraLoans: JSON.stringify((s.extraLoans || []).map(function(e){ return [String(e.id || ''), String(e.name || ''), amt(e.amount), String(e.memo || '')]; })),
     barn: amt(s.barn),
     incomes: JSON.stringify((s.incomes || []).map(function(i){ return [String(i.id || ''), String(i.owner || ''), String(i.name || ''), amt(i.amount), String(i.memo || ''), String(i.date || '')]; })),
+    extraInvestments: JSON.stringify((s.extraInvestments || []).map(function(x){ return [String(x.id || ''), String(x.date || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; })),
     expenses: JSON.stringify((s.expenses || []).map(function(e){ return [String(e.id || ''), String(e.date || ''), String(e.category || ''), String(e.memo || ''), amt(e.amount)]; })),
     nuga: JSON.stringify(nugaSig(s))
   };
@@ -4752,11 +4996,17 @@ function syncNoticeDiff(before, after){
   var goneExp = Object.keys(beMap).filter(function(id){ return !aeMap[id]; }).length;
   var newInc = (after.incomes || []).filter(function(i){ return !biMap[String(i.id)]; });
   var goneInc = Object.keys(biMap).filter(function(id){ return !aiMap[id]; }).length;
+  var bxMap = syncIdMap(before.extraInvestments), axMap = syncIdMap(after.extraInvestments);
+  var newXi = (after.extraInvestments || []).filter(function(x){ return !bxMap[String(x.id)]; });
+  var goneXi = Object.keys(bxMap).filter(function(id){ return !axMap[id]; }).length;
   var changes = [];
   if(newInc.length) changes.push('입금 +' + newInc.length + '건');
   if(goneInc) changes.push('입금 -' + goneInc + '건');
   if(newExp.length) changes.push('지출 +' + newExp.length + '건');
   if(goneExp) changes.push('지출 -' + goneExp + '건');
+  if(newXi.length) changes.push('추가투자 +' + newXi.length + '건');
+  if(goneXi) changes.push('추가투자 -' + goneXi + '건');
+  if(!newXi.length && !goneXi && sb.extraInvestments !== sa.extraInvestments) changes.push('추가투자 변경');
   if(sb.savings !== sa.savings) changes.push('고정저축 변경');
   if(sb.fixed !== sa.fixed) changes.push('고정지출 변경');
   if(sb.transfers !== sa.transfers) changes.push('자동이체 변경');

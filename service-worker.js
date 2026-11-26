@@ -1,7 +1,7 @@
 /* 우리 집 살림 — 홈 화면 앱이 네트워크 없이도 열리도록 하는 캐시
    - 같은 출처(our site)의 GET만 다룹니다. Firebase(gstatic.com · googleapis.com) 같은
      바깥 요청은 가로채지 않고 브라우저에 그대로 넘깁니다. */
-const CACHE = 'household-budget-v11-20261126-nuga-analysis';
+const CACHE = 'household-budget-v12-20261126-extra-invest';
 const ASSETS = [
   './',
   './index.html',
