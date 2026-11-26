@@ -530,12 +530,12 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
       </div>
 
       <div class="card">
-        <div class="card-head"><h3 class="card-title">CSV로 한 번에 가져오기</h3><span class="badge gray">데모</span></div>
-        <p class="hint">토스·카드사에서 내려받은 CSV를 붙여넣거나 파일로 올리면 날짜·가맹점·금액을 자동으로 읽어요. 쉼표·탭으로 나뉜 파일 모두 됩니다.</p>
+        <div class="card-head"><h3 class="card-title">CSV·엑셀로 한 번에 가져오기</h3><span class="badge gray">데모</span></div>
+        <p class="hint">토스·카드사(신한카드 등)에서 내려받은 CSV나 엑셀(.xlsx) 파일을 올리면 날짜·가맹점·금액을 자동으로 읽어요. 쉼표·탭으로 나뉜 CSV 모두 되고, 엑셀은 취소 건을 빼고 할부는 가맹점명에 표시해요.</p>
         <textarea id="csv-text" placeholder="이용일자,이용가맹점,이용금액&#10;2026-11-24,스타벅스 포항이동점,6800&#10;2026-11-23,GS칼텍스 주유소,60000"></textarea>
         <div class="row gap" style="margin-top:8px">
           <label class="btn ghost small" style="text-align:center;flex:1;display:block">파일 선택
-            <input type="file" id="csv-file" accept=".csv,.txt,text/csv" hidden>
+            <input type="file" id="csv-file" accept=".csv,.txt,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
           </label>
           <button class="btn ghost small" id="csv-sample" style="flex:1">예시 채우기</button>
           <button class="btn primary small" id="csv-parse" style="flex:1.2">불러오기</button>
@@ -2115,22 +2115,271 @@ function parseCSV(text){
 }
 
 /* =========================================================
+   엑셀(.xlsx) 파일 — 필요할 때만 SheetJS를 받아 와서 읽기
+   ========================================================= */
+var XLSX_SOURCES = [
+  'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
+  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+  'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
+];
+var XLSX_TIMEOUT_MS = 15000;
+var xlsxPending = null;
+
+/* 인터넷이 없거나 CDN이 막히면 15초 안에 포기하고 친절한 안내를 띄운다. */
+function loadXlsxLib(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(xlsxPending) return xlsxPending;
+  xlsxPending = new Promise(function(resolve, reject){
+    var deadline = Date.now() + XLSX_TIMEOUT_MS;
+    var idx = 0;
+    function done(fn, arg){ xlsxPending = null; fn(arg); }
+    function next(){
+      if(idx >= XLSX_SOURCES.length || Date.now() >= deadline){ done(reject, new Error('xlsx-unavailable')); return; }
+      var s = document.createElement('script');
+      var settled = false;
+      var left = Math.max(1500, deadline - Date.now());
+      var timer = setTimeout(function(){
+        if(settled) return;
+        settled = true;
+        if(s.parentNode) s.parentNode.removeChild(s);
+        next();
+      }, left);
+      s.async = true;
+      s.src = XLSX_SOURCES[idx++];
+      s.onload = function(){
+        if(settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if(window.XLSX) done(resolve, window.XLSX);
+        else next();
+      };
+      s.onerror = function(){
+        if(settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if(s.parentNode) s.parentNode.removeChild(s);
+        next();
+      };
+      document.head.appendChild(s);
+    }
+    next();
+  });
+  return xlsxPending;
+}
+
+function isSheetFile(file){
+  var n = String((file && file.name) || '').toLowerCase();
+  if(/\.(xlsx|xlsm|xls)$/.test(n)) return true;
+  var t = String((file && file.type) || '');
+  return /spreadsheetml|ms-excel/.test(t);
+}
+
+function cellText(v){
+  if(v == null) return '';
+  if(v instanceof Date) return v.getFullYear() + '-' + pad2(v.getMonth() + 1) + '-' + pad2(v.getDate());
+  return String(v).trim();
+}
+
+/* 엑셀 시트의 머리글 이름으로 열을 찾는다 (신한카드·토스·은행 양식 공통) */
+var SHEET_COL_RULES = [
+  ['date', /^(거래일|거래일시|거래일자|이용일자|이용일시|승인일자|사용일자|결제일자|날짜|일시|승인일)$/],
+  ['amount', /^(이용금액|거래금액|승인금액|출금액|출금|결제금액|사용금액|청구금액|금액)$/],
+  ['merchant', /^(가맹점명|가맹점|이용가맹점|사용처|이용처|적요|거래내용|내용|상호|상호명)$/],
+  ['category', /^(업종|업종명|카테고리|분류)$/],
+  ['status', /^(취소상태|취소여부|승인취소|거래상태|상태)$/],
+  ['buyType', /^(매입구분|매입상태|구분)$/],
+  ['useType', /^(이용구분|할부|할부개월|할부기간)$/]
+];
+
+function sheetHeaderMap(row){
+  var map = {date:-1, amount:-1, merchant:-1, category:-1, status:-1, buyType:-1, useType:-1};
+  (row || []).forEach(function(cell, i){
+    var c = cellText(cell);
+    if(!c) return;
+    for(var k = 0; k < SHEET_COL_RULES.length; k++){
+      var key = SHEET_COL_RULES[k][0];
+      if(map[key] < 0 && SHEET_COL_RULES[k][1].test(c)) map[key] = i;
+    }
+  });
+  return map;
+}
+
+function tableToCsv(rows){
+  return (rows || []).map(function(cells){
+    return (cells || []).map(function(c){
+      var s = cellText(c).replace(/"/g, '""');
+      return /[",\t\n]/.test(s) ? '"' + s + '"' : s;
+    }).join(',');
+  }).join('\n');
+}
+
+/* 시트의 2차원 배열 -> 가계부 지출 행 (취소·합계 줄 제외, 할부 표시) */
+function rowsFromSheet(sheetRows){
+  var rows = sheetRows || [];
+  var headerIdx = -1, map = null;
+  for(var i = 0; i < Math.min(rows.length, 8); i++){
+    var m = sheetHeaderMap(rows[i]);
+    if(m.date >= 0 && m.amount >= 0){ headerIdx = i; map = m; break; }
+  }
+  if(headerIdx < 0) return null;
+
+  var out = [], canceled = 0, skipped = 0, installments = 0;
+  for(var r = headerIdx + 1; r < rows.length; r++){
+    var cells = rows[r] || [];
+    var hasAny = false;
+    for(var j = 0; j < cells.length; j++){ if(cellText(cells[j]) !== ''){ hasAny = true; break; } }
+    if(!hasAny) continue;
+    var dateRaw = cellText(cells[map.date]);
+    var amtRaw = cellText(cells[map.amount]);
+    if(!dateRaw || !amtRaw){ skipped++; continue; }  /* '총 42건' 같은 합계·안내 줄 */
+    var statusText = map.status >= 0 ? cellText(cells[map.status]) : '';
+    var buyText = map.buyType >= 0 ? cellText(cells[map.buyType]) : '';
+    var amount = parseAmount(amtRaw);
+    if(/취소/.test(statusText) || /취소/.test(buyText) || amount <= 0){ canceled++; continue; }
+    var date = parseDate(dateRaw);
+    if(!date){ skipped++; continue; }
+    var merchant = map.merchant >= 0 ? cellText(cells[map.merchant]) : '';
+    var useType = map.useType >= 0 ? cellText(cells[map.useType]) : '';
+    var label = merchant || '가맹점 미상';
+    if(/할부/.test(useType)){ label += ' (' + useType + ')'; installments++; }
+    var bizType = map.category >= 0 ? cellText(cells[map.category]) : '';
+    out.push({
+      date: date,
+      merchant: label,
+      amount: Math.round(amount),
+      category: guessCategory(bizType ? bizType + ' ' + merchant : merchant)
+    });
+  }
+  return {rows: out, canceled: canceled, skipped: skipped, installments: installments};
+}
+
+/* 통합문서에서 지출 내역이 있는 첫 시트를 쓴다(없으면 첫 시트를 CSV처럼 읽는다) */
+function parseSheetWorkbook(XLSX, wb){
+  var names = wb.SheetNames || [];
+  var best = null;
+  for(var i = 0; i < names.length && !best; i++){
+    var ws = wb.Sheets[names[i]];
+    if(!ws) continue;
+    var rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:'', blankrows:false});
+    var res = rowsFromSheet(rows);
+    if(res && res.rows.length) best = {sheet: names[i], res: res};
+  }
+  if(best) return best.res;
+  if(!names.length) return {rows: [], canceled: 0, skipped: 0, installments: 0};
+  var first = XLSX.utils.sheet_to_json(wb.Sheets[names[0]], {header:1, raw:true, defval:'', blankrows:false});
+  var fallback = parseCSV(tableToCsv(first));
+  return {rows: fallback.rows, canceled: 0, skipped: fallback.skipped, installments: 0};
+}
+
+function rowsToCsvText(rows){
+  var lines = ['날짜,가맹점,금액'];
+  (rows || []).forEach(function(r){
+    lines.push([r.date, String(r.merchant || '').replace(/,/g, ' '), r.amount].join(','));
+  });
+  return lines.join('\n');
+}
+
+function setCsvStatus(msg, retry){ 
+  var box = $('csv-preview');
+  if(!box) return;
+  box.innerHTML = '<p class="hint small" id="csv-status" style="margin-top:10px">' + esc(msg) + '</p>' +
+    (retry ? '<div class="row gap" style="margin-top:8px"><button class="btn ghost tiny" id="csv-xlsx-retry">엑셀 다시 읽기</button></div>' : '');
+}
+
+var lastSheetFile = null;
+
+function importSheetFile(file){
+  if(!file) return;
+  lastSheetFile = file;
+  setCsvStatus('엑셀 파일을 읽는 중이에요…', false);
+  loadXlsxLib().then(function(XLSX){
+    var reader = new FileReader();
+    reader.onload = function(){
+      var res = null;
+      try{
+        var data = new Uint8Array(reader.result);
+        var wb = XLSX.read(data, {type:'array', cellDates:true});
+        res = parseSheetWorkbook(XLSX, wb);
+      }catch(err){ res = null; }
+      if(!res){ setCsvStatus('엑셀 파일을 읽지 못했어요. 카드사에서 받은 원본 파일인지 확인해 주세요.', true); toast('엑셀 파일을 읽지 못했어요'); return; }
+      applySheetRows(res);
+    };
+    reader.onerror = function(){ setCsvStatus('파일을 읽지 못했어요. 다시 시도해 주세요.', true); };
+    reader.readAsArrayBuffer(file);
+  }).catch(function(){
+    setCsvStatus('엑셀 파일을 열려면 인터넷에서 엑셀 읽기 도구(SheetJS)를 한 번 받아 와야 해요. 연결을 확인한 뒤 [엑셀 다시 읽기]를 누르거나, 카드사에서 CSV로 내려받아 올려 주세요.', true);
+    toast('엑셀 읽기 도구를 불러오지 못했어요');
+  });
+}
+
+function applySheetRows(res){
+  var rows = res.rows || [];
+  parsedRowsAll = rows.slice();
+  parseMonth = '';
+  parseNote = (res.canceled ? '취소 ' + res.canceled + '건 제외' : '');
+  applyMonthFilter();
+  var ta = $('csv-text');
+  if(ta) ta.value = rowsToCsvText(rows);
+  renderCsvPreview();
+  if(rows.length){
+    toast(rows.length + '건을 읽었어요' + (res.canceled ? ' · 취소 ' + res.canceled + '건 제외' : ''));
+  }else{
+    toast(parseNote ? parseNote + '하고 남은 내역이 없어요' : '읽을 수 있는 지출 내역이 없어요');
+  }
+}
+
+/* =========================================================
    CSV 미리보기
    ========================================================= */
 var parsedRows = [];
+var parsedRowsAll = [];
+var parseNote = '';
+var parseMonth = '';
+
+function monthKeyOf(date){ return String(date || '').slice(0, 7); }
+
+function monthsInRows(rows){
+  var seen = {}, out = [];
+  (rows || []).forEach(function(r){
+    var k = monthKeyOf(r.date);
+    if(k && !seen[k]){ seen[k] = 1; out.push(k); }
+  });
+  out.sort();
+  return out;
+}
+
+function applyMonthFilter(){
+  if(!parseMonth){ parsedRows = parsedRowsAll.slice(); return; }
+  parsedRows = parsedRowsAll.filter(function(r){ return monthKeyOf(r.date) === parseMonth; });
+}
 
 function renderCsvPreview(){
   var box = $('csv-preview');
   if(!box) return;
   if(!parsedRows.length){
-    box.innerHTML = '<p class="hint small" id="csv-status" style="margin-top:10px">읽은 내용이 없어요. 붙여넣은 형식을 확인해 주세요.</p>';
+    box.innerHTML = '<p class="hint small" id="csv-status" style="margin-top:10px">' +
+      (parseNote ? esc(parseNote) + '하고 남은 내역이 없어요.' : '읽은 내용이 없어요. 붙여넣은 형식을 확인해 주세요.') + '</p>';
     return;
   }
   var sum = parsedRows.reduce(function(a, b){ return a + b.amount; }, 0);
   var head = parsedRows.slice(0, 6);
   var more = parsedRows.length - head.length;
+  var months = monthsInRows(parsedRowsAll);
+  var monthBar = '';
+  if(months.length > 1 || parseMonth){
+    monthBar = '<div class="chip-row">' +
+      '<button class="chip' + (parseMonth ? '' : ' active') + '" id="csv-month-all">전체 ' + parsedRowsAll.length + '건</button>' +
+      months.map(function(m){
+        var cnt = parsedRowsAll.filter(function(r){ return monthKeyOf(r.date) === m; }).length;
+        return '<button class="chip' + (parseMonth === m ? ' active' : '') + '" data-month="' + m + '">' +
+          m.slice(0, 4) + '.' + m.slice(5) + ' ' + cnt + '건</button>';
+      }).join('') +
+    '</div>';
+  }
   box.innerHTML =
-    '<p class="csv-summary"><span>' + parsedRows.length + '건 읽음 · 합계 ' + won(sum) + '</span><span style="color:#8b95a1;font-weight:600">미리보기</span></p>' +
+    '<p class="csv-summary"><span>' + parsedRows.length + '건 읽음 · 합계 ' + won(sum) +
+      (parseNote ? ' · ' + esc(parseNote) : '') + '</span><span style="color:#8b95a1;font-weight:600">미리보기</span></p>' +
+    monthBar +
     '<table class="csv-table"><thead><tr><th>날짜</th><th>가맹점</th><th style="text-align:right">금액</th></tr></thead><tbody>' +
     head.map(function(r){
       return '<tr><td>' + (r.date ? esc(r.date.slice(5)) : '—') + '</td><td>' + esc(r.merchant) + '</td><td class="num">' + fmt(r.amount) + '</td></tr>';
@@ -2148,7 +2397,10 @@ function runParse(){
   var text = textEl ? textEl.value : '';
   if(!text.trim()){ toast('CSV 내용을 먼저 붙여넣어 주세요'); return; }
   var res = parseCSV(text);
-  parsedRows = res.rows;
+  parsedRowsAll = res.rows.slice();
+  parseMonth = '';
+  parseNote = '';
+  applyMonthFilter();
   renderCsvPreview();
   if(parsedRows.length) toast(parsedRows.length + '건을 읽었어요');
   else toast('읽을 수 있는 지출 내역이 없어요');
@@ -2411,6 +2663,12 @@ function wire(){
     csvFile.addEventListener('change', function(){
       var f = csvFile.files && csvFile.files[0];
       if(!f) return;
+      /* 엑셀(.xlsx/.xls)은 SheetJS로, CSV·텍스트는 그대로 읽는다 */
+      if(isSheetFile(f)){
+        importSheetFile(f);
+        csvFile.value = '';
+        return;
+      }
       var reader = new FileReader();
       reader.onload = function(){
         var buf = reader.result;
@@ -2434,14 +2692,35 @@ function wire(){
   var csvBox = $('csv-preview');
   if(csvBox){
     csvBox.addEventListener('click', function(e){
-      if(e.target.id === 'csv-clear' || (e.target.closest && e.target.closest('#csv-clear'))){
+      var hit = function(sel){ return e.target.id === sel || (e.target.closest && e.target.closest('#' + sel)); };
+      if(hit('csv-xlsx-retry')){
+        if(lastSheetFile) importSheetFile(lastSheetFile);
+        return;
+      }
+      if(hit('csv-month-all')){
+        parseMonth = '';
+        applyMonthFilter();
+        renderCsvPreview();
+        return;
+      }
+      var mBtn = e.target.closest ? e.target.closest('[data-month]') : null;
+      if(mBtn && csvBox.contains(mBtn)){
+        parseMonth = mBtn.getAttribute('data-month') || '';
+        applyMonthFilter();
+        renderCsvPreview();
+        return;
+      }
+      if(hit('csv-clear')){
         parsedRows = [];
+        parsedRowsAll = [];
+        parseNote = '';
+        parseMonth = '';
         var t = $('csv-text');
         if(t) t.value = '';
         if(csvBox) csvBox.innerHTML = '';
         return;
       }
-      if(e.target.id === 'csv-add' || (e.target.closest && e.target.closest('#csv-add'))){
+      if(hit('csv-add')){
         if(!parsedRows.length) return;
         parsedRows.forEach(function(r){
           state.expenses.push({id: uid(), date: r.date, category: r.category, memo: r.merchant, amount: r.amount});
@@ -2449,6 +2728,9 @@ function wire(){
         var n = parsedRows.length;
         saveState();
         parsedRows = [];
+        parsedRowsAll = [];
+        parseNote = '';
+        parseMonth = '';
         if(csvBox) csvBox.innerHTML = '';
         var t2 = $('csv-text');
         if(t2) t2.value = '';
