@@ -181,6 +181,20 @@ main{padding:0 16px;display:flex;flex-direction:column;gap:12px}
 .di-amount input{border:0;background:transparent;outline:none;width:96px;text-align:right;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
 .di-amount .unit{font-size:11px;color:#9aa3ad}
 .share{font-size:11px;color:var(--muted);width:32px;text-align:right;flex:0 0 auto;font-variant-numeric:tabular-nums}
+/* 항목을 누르면 열리는 인라인 수정 (저축·고정지출) */
+.di-open{display:flex;align-items:center;flex:1;min-width:0;background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.di-open:active{opacity:.6}
+.di-open .di-main{flex:1;min-width:0}
+.detail-item.editing{display:block}
+.item-editor{background:#f7f8fa;border-radius:16px;padding:11px}
+.item-editor .field{background:#fff;margin-bottom:7px}
+.item-editor .field.amount{padding:11px 14px}
+.item-editor .field.amount input{font-size:19px}
+.item-editor .income-chips{margin:0 0 7px}
+.item-editor .row{gap:6px}
+.item-editor .row .btn{flex:1;padding-left:6px;padding-right:6px;white-space:nowrap}
+.item-editor .f-label{width:auto;flex:0 0 auto}
+.item-editor [data-sav-del],.item-editor [data-fix-del]{flex:0 0 auto;color:#e5483c}
 
 /* ---------- variable tab ---------- */
 .field{display:flex;align-items:center;gap:8px;background:#f7f8fa;border:1px solid transparent;border-radius:14px;padding:11px 14px;margin-bottom:8px}
@@ -357,7 +371,9 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 .money-tile{background:rgba(255,255,255,.85);border-radius:14px;padding:10px 12px;min-width:0}
 .money-tile span{display:block;font-size:11.5px;color:var(--sub);font-weight:600;letter-spacing:-.2px}
 .money-tile strong{display:block;margin-top:3px;font-size:15px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.money-tile.final{background:#fff;box-shadow:inset 0 0 0 1.5px #cfe6ff}
+.money-tile.final{grid-column:1 / -1;background:#fff;box-shadow:inset 0 0 0 1.5px #cfe6ff;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.money-tile.final span{font-size:12px}
+.money-tile.final strong{margin-top:0;font-size:17px}
 .money-tile.final.neg strong{color:#e5483c}
 .spare-card.empty .money-tile{background:rgba(255,255,255,.9)}
 .home-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
@@ -385,6 +401,8 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
   .home-hero .spare-amount{font-size:32px}
   .month-tile strong{font-size:11.5px}
   .money-tile strong{font-size:13.5px}
+  .money-tile.final strong{font-size:15px}
+  .home-hero .spare-label{font-size:11.5px}
   .home-actions .btn{font-size:12.5px;padding:13px 4px}
 }
 @media (max-width:379px){
@@ -432,21 +450,24 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
       <!-- 1) 이번 달 생활비 현황 (핵심 카드) -->
       <div class="card spare-card home-hero" id="spare-card">
         <div class="hero-top">
-          <p class="spare-label" id="spare-label">고정·저축 빼고 남은 돈</p>
+          <p class="spare-label" id="spare-label">들어온 돈 − 고정지출 − 고정저축</p>
           <span class="badge gray" id="spare-badge">이번 달</span>
         </div>
         <h2 class="spare-amount" id="spare-free">0원</h2>
         <p class="spare-sub" id="spare-free-sub">입금 내역을 넣으면 여윳돈이 바로 계산돼요.</p>
         <div class="home-empty" id="spare-empty" hidden>
           <strong>아직 들어온 돈이 없어요</strong>
-          <span>월급처럼 들어온 돈을 넣으면, 고정지출·저축을 빼고 이번 달에 쓸 수 있는 돈이 여기에 나와요.</span>
+          <span>월급처럼 들어온 돈을 넣으면, 고정지출과 고정저축을 빼고 이번 달에 쓸 수 있는 돈이 여기에 나와요.</span>
         </div>
         <div class="money-grid">
           <div class="money-tile"><span>들어온 돈</span><strong id="tile-income">0원</strong></div>
-          <div class="money-tile"><span>고정·저축</span><strong id="tile-fixedsave">0원</strong></div>
+          <div class="money-tile"><span>고정지출</span><strong id="tile-fixed">0원</strong></div>
+          <div class="money-tile"><span>고정저축</span><strong id="tile-savings">0원</strong></div>
           <div class="money-tile"><span>쓴 돈</span><strong id="tile-var">0원</strong></div>
           <div class="money-tile final" id="tile-final-box"><span>쓴 돈 빼고 남은 돈</span><strong id="tile-final">0원</strong></div>
         </div>
+        <!-- 이전 버전 호환: 고정지출+저축 합계 타일(화면에는 보이지 않음) -->
+        <span id="tile-fixedsave" hidden>0원</span>
         <div class="home-actions">
           <button class="btn primary" id="quick-expense-btn" type="button">+ 지출 기록하기</button>
           <button class="btn" id="income-add-btn" type="button">+ 입금 추가</button>
@@ -520,12 +541,12 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
           <div class="flow">
             <div class="flow-row"><span>들어온 돈</span><strong id="flow-income">0원</strong></div>
             <div class="flow-row minus"><span>고정지출</span><strong id="flow-fixed">0원</strong></div>
-            <div class="flow-row minus"><span>매달 저축</span><strong id="flow-save">0원</strong></div>
-            <div class="flow-row sum"><span>= 고정·저축 빼고 남은 돈</span><strong id="flow-free">0원</strong></div>
+            <div class="flow-row minus"><span>고정저축</span><strong id="flow-save">0원</strong></div>
+            <div class="flow-row sum"><span>= 들어온 돈 − 고정지출 − 고정저축</span><strong id="flow-free">0원</strong></div>
             <div class="flow-row minus"><span>쓴 돈</span><strong id="flow-var">0원</strong></div>
             <div class="flow-row final" id="flow-final-row"><span>= 쓴 돈 빼고 남은 돈</span><strong id="flow-final">0원</strong></div>
           </div>
-          <p class="flow-foot" id="home-save-line">매달 저축하는 돈 <b id="home-save">0원</b>은 따로 모으는 돈이라, 쓸 수 있는 돈에서 빼고 계산해요.</p>
+          <p class="flow-foot" id="home-save-line">매달 고정저축하는 돈 <b id="home-save">0원</b>은 따로 모으는 돈이라, 쓸 수 있는 돈에서 빼고 계산해요.</p>
         </div>
 
         <div class="card" id="sync-card">
@@ -625,8 +646,9 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
       <div class="card">
         <div class="card-head"><h3 class="card-title">월 저축</h3><strong id="save-total" style="font-size:15px;font-variant-numeric:tabular-nums">0원</strong></div>
         <div id="savings-groups"></div>
+        <button class="btn ghost small block" id="savings-add" type="button" style="margin-top:12px">+ 저축 항목 추가</button>
         <div class="row between">
-          <span class="hint small">금액을 눌러 고칠 수 있어요</span>
+          <span class="hint small">항목을 누르면 이름·금액·소유자를 고칠 수 있어요</span>
           <button class="btn ghost tiny" id="savings-reset">기본값</button>
         </div>
       </div>
@@ -779,8 +801,9 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 
       <div class="card">
         <div class="card-head"><h3 class="card-title">고정지출 상세</h3><strong id="fixed-total" style="font-size:15px;font-variant-numeric:tabular-nums">0원</strong></div>
-        <p class="hint small" style="margin-bottom:14px">금액을 고치면 한눈에 요약과 비율도 같이 바뀌어요.</p>
+        <p class="hint small" style="margin-bottom:14px">금액을 고치거나 항목을 눌러 이름·메모를 바꾸면 한눈에 요약과 비율도 같이 바뀌어요.</p>
         <ul class="detail-list" id="fixed-list"></ul>
+        <button class="btn ghost small block" id="fixed-add" type="button" style="margin-top:12px">+ 고정지출 항목 추가</button>
       </div>
 
       <div class="card">
@@ -1411,39 +1434,207 @@ function saveExpenseEdit(id){
 /* =========================================================
    저축
    ========================================================= */
+var NEW_ITEM = '__new__';
+var savEditId = null;      /* 열려 있는 저축 항목 수정 */
+var savEditOwner = '';     /* 수정 중인 항목의 소유자(칩 선택) */
+var fixEditId = null;      /* 열려 있는 고정지출 항목 수정 */
+
+function savingsEditorHTML(it){
+  var isNew = !it;
+  var opts = ownerOptions();
+  var owner = isNew ? (savEditOwner || opts[0] || '공동') : (it.owner || '공동');
+  if(opts.indexOf(owner) < 0) opts.push(owner);
+  return '<li class="detail-item editing">' +
+    '<div class="item-editor">' +
+      '<div class="field"><input class="sav-edit-name" maxlength="16" value="' + esc(isNew ? '' : it.name) + '" placeholder="이름 (예: 여행 적금)" aria-label="저축 이름"></div>' +
+      '<div class="field amount"><input class="sav-edit-amount" inputmode="numeric" value="' + (isNew ? '' : fmt(it.amount)) + '" placeholder="0" aria-label="저축 금액"><span class="unit">원</span></div>' +
+      '<div class="income-chips">' + opts.map(function(o){
+        return '<button class="chip' + (o === owner ? ' active' : '') + '" type="button" data-sav-owner="' + esc(o) + '">' + esc(o) + '</button>';
+      }).join('') + '</div>' +
+      '<div class="field"><input class="sav-edit-memo" maxlength="40" value="' + esc(isNew ? '' : it.memo) + '" placeholder="메모 (선택)" aria-label="저축 메모"></div>' +
+      '<div class="row">' +
+        '<button class="btn primary small" type="button" data-sav-save="' + (isNew ? NEW_ITEM : esc(it.id)) + '">' + (isNew ? '추가' : '저장') + '</button>' +
+        '<button class="btn ghost small" type="button" data-sav-cancel="1">취소</button>' +
+        (isNew ? '' : '<button class="btn ghost small" type="button" data-sav-del="' + esc(it.id) + '">✕ 삭제</button>') +
+      '</div>' +
+    '</div>' +
+  '</li>';
+}
+
 function renderSavings(){
   var box = $('savings-groups');
   if(!box) return;
+  /* 지워지거나 새로 불러온 내용에 없는 항목을 수정 중이면 자동으로 접는다 */
+  if(savEditId && savEditId !== NEW_ITEM && !state.savings.some(function(s){ return s.id === savEditId; })) savEditId = null;
   var owners = [];
   state.savings.forEach(function(s){ if(owners.indexOf(s.owner) < 0) owners.push(s.owner); });
-  box.innerHTML = owners.map(function(o){
+  var html = owners.map(function(o){
     var items = state.savings.filter(function(s){ return s.owner === o; });
     if(!items.length) return '';
     var sum = items.reduce(function(a, b){ return a + num(b.amount); }, 0);
     return '<div class="owner-head"><span class="owner-badge" data-owner="' + o + '">' + o + '</span>' +
         '<span class="owner-sum" data-owner-sub="' + o + '">' + won(sum) + '</span></div>' +
       '<ul class="detail-list">' + items.map(function(it){
+        if(savEditId === it.id) return savingsEditorHTML(it);
         return '<li class="detail-item">' +
-          '<div class="di-main"><p class="di-name">' + esc(it.name) + '</p>' +
-          (it.memo ? '<p class="di-memo">' + esc(it.memo) + '</p>' : '') + '</div>' +
+          '<button class="di-open" type="button" data-sav-edit="' + esc(it.id) + '" aria-label="' + esc(it.name) + ' 저축 항목 수정">' +
+            '<div class="di-main"><p class="di-name">' + esc(it.name) + '</p>' +
+            (it.memo ? '<p class="di-memo">' + esc(it.memo) + '</p>' : '') + '</div>' +
+          '</button>' +
           '<div class="di-amount"><input data-amount data-kind="savings" data-id="' + it.id + '" value="' + fmt(it.amount) + '" inputmode="numeric" aria-label="' + esc(it.name) + ' 금액"><span class="unit">원</span></div>' +
         '</li>';
       }).join('') + '</ul>';
   }).join('');
+  if(savEditId === NEW_ITEM){
+    html += '<div class="owner-head"><span class="owner-badge" data-owner="' + esc(savEditOwner || '공동') + '">새 저축</span></div>' +
+      '<ul class="detail-list">' + savingsEditorHTML(null) + '</ul>';
+  }else if(!state.savings.length){
+    html = '<ul class="detail-list"><li class="empty">아직 저축 항목이 없어요. 아래 <b>+ 저축 항목 추가</b>로 하나 더해 보세요.</li></ul>';
+  }
+  box.innerHTML = html;
+}
+
+function fixedEditorHTML(it){
+  var isNew = !it;
+  return '<li class="detail-item editing">' +
+    '<div class="item-editor">' +
+      '<div class="field"><input class="fix-edit-name" maxlength="16" value="' + esc(isNew ? '' : it.name) + '" placeholder="이름 (예: 보험 및 휴대폰)" aria-label="고정지출 이름"></div>' +
+      '<div class="field amount"><input class="fix-edit-amount" inputmode="numeric" value="' + (isNew ? '' : fmt(it.amount)) + '" placeholder="0" aria-label="고정지출 금액"><span class="unit">원</span></div>' +
+      '<div class="field"><input class="fix-edit-memo" maxlength="40" value="' + esc(isNew ? '' : it.memo) + '" placeholder="메모 (선택)" aria-label="고정지출 메모"></div>' +
+      '<div class="row">' +
+        '<button class="btn primary small" type="button" data-fix-save="' + (isNew ? NEW_ITEM : esc(it.id)) + '">' + (isNew ? '추가' : '저장') + '</button>' +
+        '<button class="btn ghost small" type="button" data-fix-cancel="1">취소</button>' +
+        (isNew ? '' : '<button class="btn ghost small" type="button" data-fix-del="' + esc(it.id) + '">✕ 삭제</button>') +
+      '</div>' +
+    '</div>' +
+  '</li>';
 }
 
 function renderFixed(){
   var list = $('fixed-list');
   if(!list) return;
-  list.innerHTML = state.fixed.map(function(f){
+  if(fixEditId && fixEditId !== NEW_ITEM && !state.fixed.some(function(f){ return f.id === fixEditId; })) fixEditId = null;
+  var fxTotal = totalFixed();
+  var html = state.fixed.map(function(f){
+    if(fixEditId === f.id) return fixedEditorHTML(f);
     return '<li class="detail-item">' +
-      '<div class="di-main"><p class="di-name">' + esc(f.name) + '</p>' +
-      (f.memo ? '<p class="di-memo">' + esc(f.memo) + '</p>' : '') + '</div>' +
-      '<span class="share" data-share-id="' + f.id + '">—</span>' +
+      '<button class="di-open" type="button" data-fix-edit="' + esc(f.id) + '" aria-label="' + esc(f.name) + ' 고정지출 항목 수정">' +
+        '<div class="di-main"><p class="di-name">' + esc(f.name) + '</p>' +
+        (f.memo ? '<p class="di-memo">' + esc(f.memo) + '</p>' : '') + '</div>' +
+      '</button>' +
+      '<span class="share" data-share-id="' + f.id + '">' + (fxTotal > 0 ? Math.round(num(f.amount) / fxTotal * 100) + '%' : '—') + '</span>' +
       '<div class="di-amount"><input data-amount data-kind="fixed" data-id="' + f.id + '" value="' + fmt(f.amount) + '" inputmode="numeric" aria-label="' + esc(f.name) + ' 금액"><span class="unit">원</span></div>' +
     '</li>';
   }).join('');
+  if(fixEditId === NEW_ITEM) html += fixedEditorHTML(null);
+  else if(!state.fixed.length) html = '<li class="empty">아직 고정지출 항목이 없어요. 아래 <b>+ 고정지출 항목 추가</b>로 하나 더해 보세요.</li>';
+  list.innerHTML = html;
   setText('fixed-count', state.fixed.length + '개 항목');
+}
+
+function focusItemEditor(root){
+  if(!root) return;
+  try{ root.scrollIntoView({block: 'nearest', behavior: 'smooth'}); }catch(err){}
+  var inp = root.querySelector('.sav-edit-name, .fix-edit-name');
+  if(inp){ try{ inp.focus({preventScroll: true}); }catch(err2){} }
+}
+function openSavingsEditor(id){
+  var it = state.savings.filter(function(s){ return s.id === id; })[0];
+  if(!it) return;
+  savEditId = id;
+  savEditOwner = it.owner || '공동';
+  renderSavings();
+  focusItemEditor(document.querySelector('#savings-groups .detail-item.editing'));
+}
+function openNewSavings(){
+  savEditId = NEW_ITEM;
+  savEditOwner = savEditOwner || (ownerOptions()[0] || '공동');
+  renderSavings();
+  focusItemEditor(document.querySelector('#savings-groups .detail-item.editing'));
+}
+function saveSavingsItem(id){
+  var box = document.querySelector('#savings-groups .detail-item.editing');
+  if(!box) return;
+  var nameEl = box.querySelector('.sav-edit-name');
+  var amtEl = box.querySelector('.sav-edit-amount');
+  var memoEl = box.querySelector('.sav-edit-memo');
+  var isNew = id === NEW_ITEM;
+  var name = nameEl ? nameEl.value.trim().slice(0, 16) : '';
+  var amount = amtEl ? Math.max(0, Math.round(Number(amtEl.value.replace(/[^0-9]/g, '')) || 0)) : 0;
+  var memo = memoEl ? memoEl.value.trim().slice(0, 40) : '';
+  var owner = savEditOwner || (ownerOptions()[0] || '공동');
+  if(!name){ toast('저축 이름을 적어 주세요'); if(nameEl) nameEl.focus(); return; }
+  if(isNew && !amount){ toast('저축 금액을 입력해 주세요'); if(amtEl) amtEl.focus(); return; }
+  if(isNew){
+    state.savings.push({id: uid(), owner: owner, name: name, amount: amount, memo: memo});
+  }else{
+    state.savings.forEach(function(s){
+      if(s.id === id){ s.owner = owner; s.name = name; s.amount = amount; s.memo = memo; }
+    });
+  }
+  savEditId = null;
+  saveState();
+  renderSavings();
+  updateSummaries();
+  toast(isNew ? '저축 항목을 추가했어요' : '저축 항목을 고쳤어요');
+}
+function deleteSavingsItem(id){
+  var it = state.savings.filter(function(s){ return s.id === id; })[0];
+  if(!window.confirm('"' + (it ? it.name : '저축') + '" 항목을 삭제할까요?')) return;
+  state.savings = state.savings.filter(function(s){ return s.id !== id; });
+  if(savEditId === id) savEditId = null;
+  saveState();
+  renderSavings();
+  updateSummaries();
+  toast('저축 항목을 삭제했어요');
+}
+
+function openFixedEditor(id){
+  var it = state.fixed.filter(function(f){ return f.id === id; })[0];
+  if(!it) return;
+  fixEditId = id;
+  renderFixed();
+  focusItemEditor(document.querySelector('#fixed-list .detail-item.editing'));
+}
+function openNewFixed(){
+  fixEditId = NEW_ITEM;
+  renderFixed();
+  focusItemEditor(document.querySelector('#fixed-list .detail-item.editing'));
+}
+function saveFixedItem(id){
+  var box = document.querySelector('#fixed-list .detail-item.editing');
+  if(!box) return;
+  var nameEl = box.querySelector('.fix-edit-name');
+  var amtEl = box.querySelector('.fix-edit-amount');
+  var memoEl = box.querySelector('.fix-edit-memo');
+  var isNew = id === NEW_ITEM;
+  var name = nameEl ? nameEl.value.trim().slice(0, 16) : '';
+  var amount = amtEl ? Math.max(0, Math.round(Number(amtEl.value.replace(/[^0-9]/g, '')) || 0)) : 0;
+  var memo = memoEl ? memoEl.value.trim().slice(0, 40) : '';
+  if(!name){ toast('고정지출 이름을 적어 주세요'); if(nameEl) nameEl.focus(); return; }
+  if(isNew && !amount){ toast('고정지출 금액을 입력해 주세요'); if(amtEl) amtEl.focus(); return; }
+  if(isNew){
+    state.fixed.push({id: uid(), name: name, amount: amount, memo: memo});
+  }else{
+    state.fixed.forEach(function(f){
+      if(f.id === id){ f.name = name; f.amount = amount; f.memo = memo; }
+    });
+  }
+  fixEditId = null;
+  saveState();
+  renderFixed();
+  updateSummaries();
+  toast(isNew ? '고정지출 항목을 추가했어요' : '고정지출 항목을 고쳤어요');
+}
+function deleteFixedItem(id){
+  var it = state.fixed.filter(function(f){ return f.id === id; })[0];
+  if(!window.confirm('"' + (it ? it.name : '고정지출') + '" 항목을 삭제할까요?')) return;
+  state.fixed = state.fixed.filter(function(f){ return f.id !== id; });
+  if(fixEditId === id) fixEditId = null;
+  saveState();
+  renderFixed();
+  updateSummaries();
+  toast('고정지출 항목을 삭제했어요');
 }
 
 /* =========================================================
@@ -1912,9 +2103,11 @@ function updateSummaries(){
   setText('flow-final', fin < 0 ? '초과 ' + won(-fin) : won(fin));
   setText('income-total', won(inc));
 
-  /* 초간단 첫 화면 — 큰 숫자 아래 4칸 타일 */
+  /* 초간단 첫 화면 — 큰 숫자 아래 타일 (고정지출·고정저축 따로) */
   setText('tile-income', won(inc));
-  setText('tile-fixedsave', won(fx + sv));
+  setText('tile-fixed', won(fx));
+  setText('tile-savings', won(sv));
+  setText('tile-fixedsave', won(fx + sv));   /* 이전 버전 합계 타일(화면에는 숨김) */
   setText('tile-var', won(vr));
   setText('tile-final', inc === 0 ? '—' : (fin < 0 ? '초과 ' + won(-fin) : won(fin)));
   var finalTile = $('tile-final-box');
@@ -1934,7 +2127,7 @@ function updateSummaries(){
   if(moneyGrid) moneyGrid.hidden = pristine;
   var heroTop = document.querySelector('.hero-top');
   if(heroTop) heroTop.hidden = pristine;
-  setText('spare-label', emptyIncome ? '이번 달 생활비' : '고정·저축 빼고 남은 돈');
+  setText('spare-label', emptyIncome ? '이번 달 생활비' : '들어온 돈 − 고정지출 − 고정저축');
   setText('spare-badge', emptyIncome ? '입금 없음' : '이번 달');
   if(spareCard){
     spareCard.classList.toggle('empty', emptyIncome);
@@ -1951,9 +2144,9 @@ function updateSummaries(){
   if(inc === 0){
     sub = '입금 내역을 넣으면 여윳돈이 바로 계산돼요.';
   }else if(free < 0){
-    sub = '고정지출·저축이 입금보다 ' + won(-free) + ' 많아요.';
+    sub = '고정지출과 고정저축이 입금보다 ' + won(-free) + ' 많아요.';
   }else{
-    sub = '고정지출과 저축을 빼고 남은, 생활비로 쓸 수 있는 돈이에요.';
+    sub = '고정지출과 고정저축을 빼고 남은, 이번 달에 쓸 수 있는 돈이에요.';
   }
   setText('spare-free-sub', sub);
 
@@ -2002,6 +2195,9 @@ function updateSummaries(){
 }
 
 function renderAll(){
+  /* 전체를 다시 그리는 경우(처음 열기·불러오기·동기화 수신·초기화)에는 열린 수정창을 접는다 */
+  savEditId = null;
+  fixEditId = null;
   renderCategoryChips();
   renderExpenses();
   renderIncomes();
@@ -2647,6 +2843,50 @@ function wire(){
     });
   });
 
+  /* ---------- 저축 · 고정지출 항목 수정/추가/삭제 ---------- */
+  var savBox = $('savings-groups');
+  if(savBox){
+    savBox.addEventListener('click', function(e){
+      if(!e.target.closest) return;
+      var ownerBtn = e.target.closest('[data-sav-owner]');
+      if(ownerBtn){
+        /* 칩만 바꾼다 — 목록을 다시 그리면 입력하던 이름·금액이 날아간다 */
+        savEditOwner = ownerBtn.getAttribute('data-sav-owner');
+        savBox.querySelectorAll('[data-sav-owner]').forEach(function(c){
+          c.classList.toggle('active', c.getAttribute('data-sav-owner') === savEditOwner);
+        });
+        return;
+      }
+      var save = e.target.closest('[data-sav-save]');
+      if(save){ saveSavingsItem(save.getAttribute('data-sav-save')); return; }
+      var cancel = e.target.closest('[data-sav-cancel]');
+      if(cancel){ savEditId = null; renderSavings(); return; }
+      var del = e.target.closest('[data-sav-del]');
+      if(del){ deleteSavingsItem(del.getAttribute('data-sav-del')); return; }
+      var open = e.target.closest('[data-sav-edit]');
+      if(open){ openSavingsEditor(open.getAttribute('data-sav-edit')); return; }
+    });
+  }
+  var savAdd = $('savings-add');
+  if(savAdd) savAdd.addEventListener('click', openNewSavings);
+
+  var fixList = $('fixed-list');
+  if(fixList){
+    fixList.addEventListener('click', function(e){
+      if(!e.target.closest) return;
+      var save = e.target.closest('[data-fix-save]');
+      if(save){ saveFixedItem(save.getAttribute('data-fix-save')); return; }
+      var cancel = e.target.closest('[data-fix-cancel]');
+      if(cancel){ fixEditId = null; renderFixed(); return; }
+      var del = e.target.closest('[data-fix-del]');
+      if(del){ deleteFixedItem(del.getAttribute('data-fix-del')); return; }
+      var open = e.target.closest('[data-fix-edit]');
+      if(open){ openFixedEditor(open.getAttribute('data-fix-edit')); return; }
+    });
+  }
+  var fixAdd = $('fixed-add');
+  if(fixAdd) fixAdd.addEventListener('click', openNewFixed);
+
   // 금액 입력 (저축/고정지출) — 위임
   document.addEventListener('input', function(e){
     var inp = e.target.closest ? e.target.closest('input[data-amount]') : null;
@@ -2654,6 +2894,13 @@ function wire(){
       var digits = inp.value.replace(/[^0-9]/g, '');
       inp.value = digits ? Number(digits).toLocaleString('ko-KR') : '';
       applyAmountInput(inp);
+      return;
+    }
+    /* 항목 수정 폼의 금액도 콤마 자동 포맷 */
+    var itemInp = (e.target.classList && (e.target.classList.contains('sav-edit-amount') || e.target.classList.contains('fix-edit-amount'))) ? e.target : null;
+    if(itemInp){
+      var d0 = itemInp.value.replace(/[^0-9]/g, '');
+      itemInp.value = d0 ? Number(d0).toLocaleString('ko-KR') : '';
       return;
     }
     /* 변동지출 수정 폼의 금액도 콤마 자동 포맷 */
