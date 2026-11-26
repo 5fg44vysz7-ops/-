@@ -1,5 +1,7 @@
-/* 우리 집 살림 — 홈 화면 앱이 네트워크 없이도 열리도록 하는 캐시 */
-const CACHE = 'household-budget-v3-20261126';
+/* 우리 집 살림 — 홈 화면 앱이 네트워크 없이도 열리도록 하는 캐시
+   - 같은 출처(our site)의 GET만 다룹니다. Firebase(gstatic.com · googleapis.com) 같은
+     바깥 요청은 가로채지 않고 브라우저에 그대로 넘깁니다. */
+const CACHE = 'household-budget-v4-20261126-sync';
 const ASSETS = [
   './',
   './index.html',
@@ -31,6 +33,12 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
+  let url;
+  try { url = new URL(req.url); } catch (e) { return; }
+
+  // 바깥 출처(Firebase SDK·Firestore API 등)는 손대지 않는다.
+  if (url.origin !== self.location.origin) return;
+
   // 페이지 이동은 네트워크 우선(업데이트 반영), 실패하면 캐시
   if (req.mode === 'navigate') {
     event.respondWith(
@@ -45,13 +53,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 나머지 리소스는 캐시 우선
+  // 같은 출처의 나머지 리소스는 캐시 우선
   event.respondWith(
     caches.match(req).then((hit) => {
       if (hit) return hit;
       return fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((cache) => cache.put(req, copy)).catch(() => {});
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(req, copy)).catch(() => {});
+        }
         return res;
       });
     })

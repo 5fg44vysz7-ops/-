@@ -1,0 +1,20 @@
+rules_version = '2';
+// 우리 집 살림 · 부부 공동 가계부 — Firestore 보안 규칙
+//
+// 방 코드는 앱에서 SHA-256 해시로 바꾼 뒤 문서 ID로만 씁니다(평문 코드는 서버에 가지 않습니다).
+// Firebase 콘솔 → Firestore Database → 규칙 탭에 이 내용을 붙여넣고 [게시] 하세요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /households/{roomId} {
+      // 방 코드의 해시를 아는 기기만 그 방 문서를 읽을 수 있습니다.
+      allow get: if true;
+      // 방 목록 훑기(컬렉션 조회)는 막습니다.
+      allow list: if false;
+      // 앱이 쓰는 5개 필드만 허용합니다.
+      allow create, update: if request.resource.data.keys()
+        .hasOnly(['schema', 'state', 'updatedAt', 'clientId', 'rev']);
+      // 가계부는 실수로도 지워지지 않게 삭제를 막습니다.
+      allow delete: if false;
+    }
+  }
+}

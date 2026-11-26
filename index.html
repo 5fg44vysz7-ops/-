@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="우리 집 살림">
 <meta name="format-detection" content="telephone=no">
-<meta name="description" content="부부 공동 가계부 — 매달 저축·고정지출·자동이체·대출 상환을 한 화면에서 확인합니다. 입력한 내용은 이 기기에만 저장됩니다.">
+<meta name="description" content="부부 공동 가계부 — 매달 저축·고정지출·자동이체·대출 상환을 한 화면에서 확인합니다. 입력한 내용은 이 기기에 저장되고, 부부 실시간 동기화를 켜면 두 분 폰에 함께 반영됩니다.">
 <title>우리 집 살림 · 부부 가계부</title>
 <style>
 :root{
@@ -294,6 +294,37 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 .tx-editor{background:#f7f8fa;border-radius:16px;padding:11px}
 .tx-editor .field{background:#fff}
 .field select{border:0;background:transparent;outline:none;flex:1;min-width:0;font-size:15px;color:inherit;appearance:none;-webkit-appearance:none}
+/* ---------- 부부 실시간 동기화 ---------- */
+.sync-chip{display:inline-flex;align-items:center;gap:6px;margin-top:9px;background:#fff;border:1px solid #e5e8eb;border-radius:999px;
+  padding:5px 11px;font-size:11.5px;font-weight:700;color:#8b95a1;letter-spacing:-.2px;cursor:pointer;max-width:100%}
+.sync-chip .sync-dot{width:7px;height:7px;border-radius:50%;background:#c3cad2;flex:0 0 auto}
+.sync-chip[data-state="live"]{background:#e8f8ef;border-color:#c9efdb;color:#0e9f6e}
+.sync-chip[data-state="live"] .sync-dot{background:#12b76a;box-shadow:0 0 0 3px rgba(18,183,106,.16)}
+.sync-chip[data-state="waiting"]{background:#fff7ed;border-color:#ffe1bf;color:#b96a08}
+.sync-chip[data-state="waiting"] .sync-dot{background:#ff8a3d}
+.sync-chip[data-state="connecting"]{background:#eef5ff;border-color:#d4e5ff;color:#1b64da}
+.sync-chip[data-state="connecting"] .sync-dot{background:#3182f6;animation:syncPulse 1s ease-in-out infinite}
+.sync-chip[data-state="error"]{background:#fff0ec;border-color:#ffd9ce;color:#e5483c}
+.sync-chip[data-state="error"] .sync-dot{background:#e5483c}
+.sync-chip span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.25}}
+.sync-room{display:flex;align-items:center;gap:8px;background:#f7f8fa;border-radius:14px;padding:10px 14px;margin:10px 0 8px}
+.sync-room span{font-size:12px;color:#8b95a1;font-weight:600;flex:0 0 auto}
+.sync-room strong{font-size:13px;font-weight:800;letter-spacing:-.2px;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.merge-box{margin-top:12px;background:#f7f8fa;border-radius:16px;padding:14px}
+.merge-box p{margin:0;font-size:12.5px;color:#4e5968;line-height:1.6;font-weight:600}
+.merge-box .merge-detail{margin:8px 0 0;font-size:11.5px;color:#8b95a1;line-height:1.75;font-weight:500;word-break:break-all}
+.merge-box .row{margin-top:11px;gap:6px}
+.merge-box .row .btn{flex:1;padding-left:8px;padding-right:8px}
+.sheet-wrap{position:fixed;inset:0;z-index:90}
+.sheet-backdrop{position:absolute;inset:0;background:rgba(17,24,39,.42)}
+.sheet{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;
+  border-radius:22px 22px 0 0;padding:8px 20px calc(22px + env(safe-area-inset-bottom));
+  max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 -12px 40px -12px rgba(17,24,39,.32)}
+.sheet-grab{width:38px;height:4px;border-radius:999px;background:#e5e8eb;margin:2px auto 12px}
+.sheet .card-head{margin-bottom:8px}
+.sheet .btn.block{margin-top:2px}
+.sheet-foot{margin:12px 0 0;font-size:11px;color:#9aa3ad;line-height:1.68}
 @media (max-width:359px){
   .mg-table th:last-child,.mg-table td:last-child{display:none}
 }
@@ -325,6 +356,9 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
       </div>
       <span class="pill" id="month-pill">이번 달</span>
     </div>
+    <button type="button" class="sync-chip" id="sync-chip" data-state="off" aria-haspopup="dialog" aria-controls="sync-sheet">
+      <span class="sync-dot" aria-hidden="true"></span><span id="sync-chip-label">이 기기에만 저장</span>
+    </button>
   </header>
 
   <main>
@@ -344,6 +378,15 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
           <div class="stat"><span>고정지출</span><strong id="stat-fixed">0원</strong></div>
           <div class="stat"><span>변동지출</span><strong id="stat-var">0원</strong></div>
         </div>
+      </div>
+
+      <div class="card" id="sync-card">
+        <div class="card-head">
+          <h3 class="card-title">부부 실시간 동기화</h3>
+          <span class="badge gray" id="sync-card-badge">꺼짐</span>
+        </div>
+        <p class="hint" id="sync-card-desc">두 분이 정한 방 코드로 연결하면, 한쪽 폰에서 고친 가계부가 다른 폰에 바로 반영돼요. 지금은 이 기기에만 저장하고 있어요.</p>
+        <button class="btn ghost small block" id="sync-card-btn">동기화 설정 열기</button>
       </div>
 
       <div class="card spare-card" id="spare-card">
@@ -440,7 +483,7 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
       </div>
 
       <div class="card note-card">
-        <p>항목 금액은 눌러서 바로 고칠 수 있고, 입력한 내용은 이 기기에만 저장됩니다. <b>고정지출</b> 탭의 '가계부 데이터'에서 .json 파일로 내보내거나 다시 불러올 수 있어요.</p>
+        <p>항목 금액은 눌러서 바로 고칠 수 있고, 입력한 내용은 이 기기에 저장됩니다. <b>부부 실시간 동기화</b>를 켜면 두 분 폰에 함께 반영되고, <b>고정지출</b> 탭의 '가계부 데이터'에서 .json 파일로 내보내거나 다시 불러올 수 있어요.</p>
       </div>
     </section>
 
@@ -644,7 +687,7 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 
       <div class="card" id="data-card">
         <div class="card-head"><h3 class="card-title">가계부 데이터</h3><span class="badge gray">파일</span></div>
-        <p class="hint small" style="margin-bottom:12px">내보내기로 이 기기의 가계부를 <b>.json</b> 파일로 저장하고, 불러오기로 그 파일을 이 기기에 다시 채울 수 있어요. 파일은 서버로 올라가지 않아요.</p>
+        <p class="hint small" style="margin-bottom:12px">내보내기로 이 기기의 가계부를 <b>.json</b> 파일로 저장하고, 불러오기로 그 파일을 이 기기에 다시 채울 수 있어요. 실시간 동기화를 켜지 않으면 파일은 서버로 올라가지 않아요.</p>
         <div class="row gap">
           <label class="btn ghost small" style="text-align:center;flex:1;display:block">불러오기
             <input type="file" id="data-import" accept=".json,application/json" hidden>
@@ -688,6 +731,42 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="sheet-wrap" id="sync-sheet" hidden>
+  <div class="sheet-backdrop" id="sync-backdrop"></div>
+  <div class="sheet" id="sync-panel" role="dialog" aria-modal="true" aria-labelledby="sync-sheet-title" aria-describedby="sync-sheet-desc">
+    <div class="sheet-grab"></div>
+    <div class="card-head">
+      <h3 class="card-title" id="sync-sheet-title">부부 실시간 동기화</h3>
+      <span class="badge gray" id="sync-sheet-badge">꺼짐</span>
+    </div>
+    <p class="hint" id="sync-sheet-desc">두 분 폰에서 <b>같은 방 코드</b>를 넣고 연결하면 가계부가 실시간으로 함께 저장돼요. 둘만 아는 <b>6자 이상</b>으로 정해 주세요. 대소문자·띄어쓰기는 구분하지 않아요.</p>
+    <div class="field">
+      <input id="sync-code" type="text" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="우리 집 방 코드 (6자 이상)" aria-label="우리 집 방 코드">
+    </div>
+    <div class="row gap" style="margin-top:8px">
+      <button class="btn primary small" id="sync-connect-btn">실시간 연결</button>
+      <button class="btn ghost small" id="sync-disconnect-btn" hidden>연결 끊기</button>
+    </div>
+    <div class="sync-room" id="sync-room" hidden><span>연결된 방</span><strong id="sync-room-code"></strong></div>
+    <p class="hint small" id="sync-msg">아직 연결하지 않았어요. 이 기기에만 저장합니다.</p>
+
+    <div class="merge-box" id="sync-merge" hidden>
+      <p id="sync-merge-text">방에 이미 가계부가 있어요. 어느 쪽으로 맞출까요?</p>
+      <p class="merge-detail" id="sync-merge-detail"></p>
+      <div class="row gap">
+        <button class="btn primary small" id="sync-merge-server">서버 내용 불러오기</button>
+        <button class="btn ghost small" id="sync-merge-local">내 폰 내용 올리기</button>
+      </div>
+      <div class="row gap" style="margin-top:6px">
+        <button class="btn ghost small" id="sync-merge-later">나중에</button>
+      </div>
+    </div>
+
+    <button class="btn ghost small block" id="sync-close" style="margin-top:12px">닫기</button>
+    <p class="sheet-foot">방 코드는 SHA-256으로 바꾼 값만 방 이름으로 쓰고, 원래 코드는 서버에 보내지 않아요. 다만 방 코드를 아는 사람은 이 가계부를 읽고 고칠 수 있으니 두 분만 아는 코드로 정하고 다른 곳에 적어 두지 마세요.</p>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -813,6 +892,8 @@ var state = loadState();
 
 function saveState(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(err){ /* 저장 불가 시 조용히 넘어감 */ }
+  /* 부부 실시간 동기화가 연결되어 있으면 디바운스 후 Firestore에 올린다 */
+  if(sync.enabled && sync.db && sync.unsub && !sync.applying) syncQueuePush();
 }
 
 /* =========================================================
@@ -2466,6 +2547,584 @@ function wire(){
 }
 
 /* =========================================================
+   부부 실시간 동기화 (Firebase Firestore)
+   - 방 코드 → SHA-256 해시를 문서 ID로 사용 (평문 코드는 서버에 보내지 않음)
+   - SDK는 연결할 때만 CDN에서 불러온다 (인터넷 없이도 앱은 그대로 동작)
+   ========================================================= */
+var FB_CONFIG = {
+  apiKey: "AIzaSyB01zKbKa7GQC8GjCX_EXOOfV9RR2ROYfA",
+  authDomain: "jhmj-7483b.firebaseapp.com",
+  projectId: "jhmj-7483b",
+  storageBucket: "jhmj-7483b.firebasestorage.app",
+  messagingSenderId: "675707123879",
+  appId: "1:675707123879:web:bbd5881d318a3f75010382",
+  measurementId: "G-MN3T6L0LM1"
+};
+var SYNC_KEY = 'household-budget-sync-v1';
+var SYNC_SCHEMA = 1;
+var SYNC_SDK_BASE = 'https://www.gstatic.com/firebasejs/11.0.2/';
+var SYNC_MIN_CODE = 6;
+var SYNC_DEBOUNCE = 300;
+var SYNC_NET_MS = 15000;
+
+var sync = {
+  enabled: false,      /* 사용자가 동기화를 켜 두었는지 (저장됨) */
+  code: '',
+  hash: '',
+  status: 'off',       /* off | connecting | live | waiting | error */
+  clientId: '',
+  db: null,
+  unsub: null,
+  modules: null,
+  modulesPromise: null,
+  applying: false,
+  pushTimer: null,
+  pending: null,       /* 병합 선택을 기다리는 연결 정보 */
+  note: '',
+  lastSyncAt: null
+};
+
+var SYNC_LABEL = {
+  off:        { chip: '이 기기에만 저장',      badge: '꺼짐',   card: '두 분이 정한 방 코드로 연결하면, 한쪽 폰에서 고친 가계부가 다른 폰에 바로 반영돼요. 지금은 이 기기에만 저장하고 있어요.' },
+  connecting: { chip: '연결 중…',              badge: '연결 중', card: '방에 연결하는 중이에요.' },
+  live:       { chip: '● 실시간 동기화 중',     badge: '연결됨', card: '두 분 폰이 같은 방을 보고 있어요. 한쪽에서 고친 내용이 바로 서로에게 반영됩니다.' },
+  waiting:    { chip: '동기화 대기(오프라인)',  badge: '대기',   card: '오프라인이거나 서버 응답을 기다리는 중이에요. 연결되면 자동으로 다시 맞춰집니다.' },
+  error:      { chip: '동기화 오류',            badge: '오류',   card: '연결에 문제가 있어요. 설정에서 방 코드를 확인하고 다시 연결해 주세요.' }
+};
+
+/* ---- 저장 (방 코드·연결 여부) ---- */
+function syncReadStore(){
+  try{
+    var raw = localStorage.getItem(SYNC_KEY);
+    if(!raw) return {};
+    var o = JSON.parse(raw);
+    return (o && typeof o === 'object') ? o : {};
+  }catch(err){ return {}; }
+}
+function syncWriteStore(patch){
+  try{
+    var o = syncReadStore();
+    Object.keys(patch).forEach(function(k){ o[k] = patch[k]; });
+    localStorage.setItem(SYNC_KEY, JSON.stringify(o));
+  }catch(err){}
+}
+
+/* ---- SHA-256 (crypto.subtle 우선, 없으면 내장 구현) ---- */
+function syncNormalizeCode(code){
+  var s = String(code == null ? '' : code);
+  try{ if(s.normalize) s = s.normalize('NFKC'); }catch(err){}
+  return s.replace(/\s+/g, '').toLowerCase();
+}
+function sha256Hex(str){
+  function rrot(v, c){ return (v >>> c) | (v << (32 - c)); }
+  var bytes = [], s = String(str);
+  for(var i = 0; i < s.length; i++){
+    var ch = s.charCodeAt(i);
+    if(ch < 0x80){ bytes.push(ch); }
+    else if(ch < 0x800){ bytes.push(0xc0 | (ch >> 6), 0x80 | (ch & 63)); }
+    else if(ch < 0xd800 || ch >= 0xe000){ bytes.push(0xe0 | (ch >> 12), 0x80 | ((ch >> 6) & 63), 0x80 | (ch & 63)); }
+    else {
+      i++;
+      var ch2 = s.charCodeAt(i) || 0;
+      var cp = 0x10000 + (((ch & 0x3ff) << 10) | (ch2 & 0x3ff));
+      bytes.push(0xf0 | (cp >> 18), 0x80 | ((cp >> 12) & 63), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63));
+    }
+  }
+  var K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var total = bytes.length;
+  bytes.push(0x80);
+  while(bytes.length % 64 !== 56) bytes.push(0);
+  var bitLen = total * 8;
+  var hi = Math.floor(bitLen / 4294967296), lo = bitLen >>> 0;
+  bytes.push((hi >>> 24) & 255, (hi >>> 16) & 255, (hi >>> 8) & 255, hi & 255,
+             (lo >>> 24) & 255, (lo >>> 16) & 255, (lo >>> 8) & 255, lo & 255);
+  var w = new Array(64);
+  for(var off = 0; off < bytes.length; off += 64){
+    for(var t = 0; t < 16; t++){
+      w[t] = (bytes[off + t * 4] << 24) | (bytes[off + t * 4 + 1] << 16) | (bytes[off + t * 4 + 2] << 8) | bytes[off + t * 4 + 3];
+    }
+    for(t = 16; t < 64; t++){
+      var s0 = rrot(w[t - 15], 7) ^ rrot(w[t - 15], 18) ^ (w[t - 15] >>> 3);
+      var s1 = rrot(w[t - 2], 17) ^ rrot(w[t - 2], 19) ^ (w[t - 2] >>> 10);
+      w[t] = (w[t - 16] + s0 + w[t - 7] + s1) | 0;
+    }
+    var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+    for(t = 0; t < 64; t++){
+      var S1 = rrot(e, 6) ^ rrot(e, 11) ^ rrot(e, 25);
+      var chE = (e & f) ^ (~e & g);
+      var t1 = (h + S1 + chE + K[t] + w[t]) | 0;
+      var S0 = rrot(a, 2) ^ rrot(a, 13) ^ rrot(a, 22);
+      var maj = (a & b) ^ (a & c) ^ (b & c);
+      var t2 = (S0 + maj) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  return H.map(function(x){ return ('00000000' + (x >>> 0).toString(16)).slice(-8); }).join('');
+}
+function syncRoomHash(code){
+  var norm = syncNormalizeCode(code);
+  if(window.crypto && window.crypto.subtle && window.TextEncoder){
+    try{
+      return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(norm)).then(function(buf){
+        return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ('0' + b.toString(16)).slice(-2); }).join('');
+      }).catch(function(){ return sha256Hex(norm); });
+    }catch(err){}
+  }
+  return Promise.resolve(sha256Hex(norm));
+}
+
+/* ---- 상태 비교 도우미 ---- */
+function syncFingerprint(s){
+  if(!s || typeof s !== 'object') return '';
+  function amt(v){ return Math.round(num(v)); }
+  var o = {
+    savings: (s.savings || []).map(function(x){ return [String(x.id || ''), String(x.owner || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; }),
+    fixed: (s.fixed || []).map(function(x){ return [String(x.id || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; }),
+    transfers: (s.transfers || []).map(function(t){ return [String(t.id || ''), String(t.day || ''), String(t.bank || ''), String(t.owner || ''), String(t.name || ''), amt(t.amount), !!t.done]; }),
+    loan: s.loan ? [String(s.loan.name || ''), amt(s.loan.total), amt(s.loan.monthly), amt(s.loan.rounds), String(s.loan.start || ''), String(s.loan.memo || ''), (s.loan.paid || []).map(Number).sort(function(a, b){ return a - b; })] : null,
+    mortgage: s.mortgage ? [String(s.mortgage.name || ''), amt(s.mortgage.principal), Math.round(num(s.mortgage.rate) * 100) / 100, String(s.mortgage.method || ''), amt(s.mortgage.months), String(s.mortgage.start || '')] : null,
+    extraLoans: (s.extraLoans || []).map(function(e){ return [String(e.id || ''), String(e.name || ''), amt(e.amount), String(e.memo || '')]; }),
+    barn: amt(s.barn),
+    incomes: (s.incomes || []).map(function(i){ return [String(i.id || ''), String(i.owner || ''), String(i.name || ''), amt(i.amount), String(i.memo || ''), String(i.date || '')]; }),
+    expenses: (s.expenses || []).map(function(e){ return [String(e.id || ''), String(e.date || ''), String(e.category || ''), String(e.memo || ''), amt(e.amount)]; })
+  };
+  return JSON.stringify(o);
+}
+function syncHasData(s){
+  if(!s || typeof s !== 'object') return false;
+  if((s.incomes || []).length || (s.expenses || []).length) return true;
+  if((s.transfers || []).length) return true;
+  if((s.extraLoans || []).length) return true;
+  if((s.savings || []).some(function(x){ return num(x.amount) > 0; })) return true;
+  if((s.fixed || []).some(function(x){ return num(x.amount) > 0; })) return true;
+  if(num(s.barn) > 0) return true;
+  if(s.loan && num(s.loan.total) > 0) return true;
+  if(s.mortgage && num(s.mortgage.principal) > 0) return true;
+  return false;
+}
+function syncTime(v){
+  if(v == null) return null;
+  if(typeof v === 'number') return v;
+  if(typeof v.toDate === 'function'){ try{ return v.toDate().getTime(); }catch(err){ return null; } }
+  var t = Date.parse(v);
+  return isNaN(t) ? null : t;
+}
+function syncClock(at){
+  var t = at || sync.lastSyncAt;
+  if(!t) return '';
+  var d = new Date(t);
+  return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+}
+function syncTimeout(promise, ms, label){
+  return new Promise(function(resolve, reject){
+    var done = false;
+    var timer = setTimeout(function(){ if(!done){ done = true; reject(new Error(label)); } }, ms);
+    promise.then(function(v){ if(!done){ done = true; clearTimeout(timer); resolve(v); } },
+                 function(e){ if(!done){ done = true; clearTimeout(timer); reject(e); } });
+  });
+}
+function syncErrText(err){
+  var code = String((err && (err.code || err.name)) || '');
+  var msg = String((err && err.message) || '');
+  if(msg === 'timeout-server') return 'Firestore 서버에 닿지 않아요. Firebase 콘솔에서 Firestore Database가 만들어졌는지 확인해 주세요.';
+  if(msg === 'timeout-sdk') return 'Firebase 파일을 내려받지 못했어요. 인터넷 연결을 확인해 주세요.';
+  if(code.indexOf('permission-denied') >= 0 || /insufficient permission|permission/i.test(msg)) return 'Firestore 보안 규칙이 이 방을 막고 있어요. 콘솔의 규칙을 확인해 주세요.';
+  if(code.indexOf('unavailable') >= 0 || code.indexOf('deadline') >= 0 || /offline|network|failed to fetch|networkerror/i.test(msg)) return '인터넷 연결을 확인해 주세요.';
+  if(code.indexOf('invalid-api-key') >= 0 || /api[- ]key/i.test(msg)) return 'Firebase API 키가 이 주소에서 허용되지 않아요. 콘솔의 API 키 제한을 확인해 주세요.';
+  if(code.indexOf('failed-precondition') >= 0) return 'Firestore 설정을 확인해 주세요. (데이터베이스가 만들어졌는지)';
+  if(code.indexOf('resource-exhausted') >= 0) return '잠시 후 다시 시도해 주세요. (요청 한도)';
+  return msg ? msg.slice(0, 120) : '알 수 없는 문제가 생겼어요.';
+}
+
+/* ---- Firebase SDK (연결할 때만 불러오기) ---- */
+function syncLoadFirebase(){
+  if(sync.modules) return Promise.resolve(sync.modules);
+  if(!sync.modulesPromise){
+    sync.modulesPromise = Promise.all([
+      import(SYNC_SDK_BASE + 'firebase-app.js'),
+      import(SYNC_SDK_BASE + 'firebase-firestore.js')
+    ]).then(function(mods){
+      var appMod = mods[0], fsMod = mods[1];
+      var apps = appMod.getApps ? appMod.getApps() : [];
+      var app = apps.length ? apps[0] : appMod.initializeApp(FB_CONFIG);
+      var db = fsMod.getFirestore(app);
+      sync.modules = { app: app, fs: fsMod, db: db };
+      sync.db = db;
+      return sync.modules;
+    }).catch(function(err){
+      sync.modulesPromise = null;
+      throw err;
+    });
+  }
+  return sync.modulesPromise;
+}
+
+/* ---- 상태 표시 ---- */
+function syncSetStatus(st){
+  sync.status = st;
+  syncUpdateUI();
+}
+function syncMsg(text){
+  sync.note = String(text || '');
+  var el = $('sync-msg');
+  if(el) el.textContent = sync.note;
+}
+function syncUpdateUI(){
+  var st = sync.status;
+  var lab = SYNC_LABEL[st] || SYNC_LABEL.off;
+  var chip = $('sync-chip');
+  if(chip){ chip.setAttribute('data-state', st); }
+  setText('sync-chip-label', lab.chip);
+  setText('sync-card-badge', lab.badge);
+  setText('sync-sheet-badge', lab.badge);
+  var desc = $('sync-card-desc');
+  if(desc) desc.textContent = lab.card;
+  var cardBadge = $('sync-card-badge');
+  if(cardBadge){
+    cardBadge.classList.toggle('gray', st !== 'live');
+    if(st === 'error') cardBadge.style.color = '#e5483c';
+    else cardBadge.style.color = '';
+  }
+  var room = $('sync-room');
+  if(room) room.hidden = !(sync.enabled && sync.code);
+  setText('sync-room-code', sync.code);
+  var disc = $('sync-disconnect-btn');
+  if(disc) disc.hidden = !sync.enabled;
+  var conn = $('sync-connect-btn');
+  if(conn) conn.textContent = sync.enabled ? '다시 연결' : '실시간 연결';
+  var note = $('sync-msg');
+  if(note && sync.note) note.textContent = sync.note;
+}
+
+/* ---- 시트 열기/닫기 ---- */
+function syncOpenSheet(){
+  var wrap = $('sync-sheet');
+  if(!wrap) return;
+  wrap.hidden = false;
+  document.body.style.overflow = 'hidden';
+  syncUpdateUI();
+  var ci = $('sync-code');
+  if(ci && !ci.value && sync.code) ci.value = sync.code;
+}
+function syncCloseSheet(){
+  var wrap = $('sync-sheet');
+  if(wrap) wrap.hidden = true;
+  document.body.style.overflow = '';
+}
+
+/* ---- 병합 선택 ---- */
+function syncSummary(s, at){
+  var parts = [];
+  function sum(list){ return (list || []).reduce(function(a, b){ return a + num(b.amount); }, 0); }
+  parts.push('입금 ' + (s.incomes || []).length + '건');
+  parts.push('지출 ' + (s.expenses || []).length + '건');
+  parts.push('저축 ' + manwon(sum(s.savings)));
+  parts.push('고정 ' + manwon(sum(s.fixed)));
+  if(at){
+    var d = new Date(at);
+    if(!isNaN(d.getTime())) parts.push((d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ' 수정');
+  }
+  return parts.join(' · ');
+}
+function syncCloseMerge(){
+  var box = $('sync-merge');
+  if(box) box.hidden = true;
+}
+function syncShowMerge(ctx, code, serverState, serverAt){
+  sync.pending = { ctx: ctx, code: code, serverState: serverState, serverAt: serverAt };
+  var box = $('sync-merge');
+  if(box) box.hidden = false;
+  var detail = $('sync-merge-detail');
+  if(detail) detail.innerHTML = '서버 · ' + esc(syncSummary(serverState, serverAt)) + '<br>이 폰 · ' + esc(syncSummary(state, null));
+  syncSetStatus('waiting');
+  syncMsg('방에 이미 가계부가 있어요. 어느 쪽으로 맞출지 골라 주세요.');
+  syncOpenSheet();
+}
+function syncPickServer(){
+  var p = sync.pending;
+  if(!p) return;
+  sync.pending = null;
+  syncCloseMerge();
+  syncApplyRemote(p.serverState);
+  syncBegin(p.ctx, p.code, '서버에 있던 가계부를 이 폰으로 불러왔어요');
+}
+function syncPickLocal(){
+  var p = sync.pending;
+  if(!p) return;
+  sync.pending = null;
+  syncCloseMerge();
+  syncSetStatus('connecting');
+  syncMsg('이 폰 가계부를 방에 올리는 중이에요…');
+  syncPushRoom(p.ctx, true).then(function(){
+    syncBegin(p.ctx, p.code, '이 폰 가계부를 방에 올렸어요');
+  }).catch(function(err){
+    syncSetStatus('error');
+    syncMsg('올리지 못했어요 · ' + syncErrText(err));
+  });
+}
+function syncPickLater(){
+  sync.pending = null;
+  syncCloseMerge();
+  sync.enabled = false;
+  syncWriteStore({ enabled: false });
+  syncCloseSheet();
+  syncSetStatus('off');
+  syncMsg('연결하지 않았어요. 이 기기에만 저장합니다.');
+  toast('동기화를 켜지 않았어요');
+}
+
+/* ---- 원격 상태 반영 ---- */
+function syncApplyRemote(raw){
+  sync.applying = true;
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(raw));
+  }catch(err){}
+  state = loadState();
+  try{ renderAll(); }catch(err){}
+  sync.applying = false;
+}
+
+/* ---- 서버 쓰기 ---- */
+function syncPushRoom(ctx, useLocal){
+  var fs = ctx.mod.fs;
+  return fs.setDoc(ctx.ref, {
+    schema: SYNC_SCHEMA,
+    state: useLocal ? state : null,
+    updatedAt: fs.serverTimestamp(),
+    clientId: sync.clientId,
+    rev: Date.now()
+  });
+}
+function syncQueuePush(){
+  if(sync.pushTimer) clearTimeout(sync.pushTimer);
+  sync.pushTimer = setTimeout(function(){
+    sync.pushTimer = null;
+    syncPushNow();
+  }, SYNC_DEBOUNCE);
+}
+function syncPushNow(){
+  if(!sync.enabled || !sync.db || !sync.hash || !sync.modules || sync.applying) return;
+  var fs = sync.modules.fs;
+  var ref = fs.doc(sync.db, 'households', sync.hash);
+  var payload = {
+    schema: SYNC_SCHEMA,
+    state: state,
+    updatedAt: fs.serverTimestamp(),
+    clientId: sync.clientId,
+    rev: Date.now()
+  };
+  fs.setDoc(ref, payload).then(function(){
+    syncWriteStore({ lastSyncAt: Date.now() });
+    sync.lastSyncAt = Date.now();
+    if(sync.unsub) syncSetStatus(sync.status === 'error' ? 'error' : 'live');
+    syncMsg('내 폰 가계부를 방에 저장했어요 · ' + syncClock());
+  }).catch(function(err){
+    syncSetStatus('error');
+    syncMsg('방에 저장하지 못했어요 · ' + syncErrText(err));
+  });
+}
+
+/* ---- 연결 ---- */
+function syncBegin(ctx, code, note){
+  sync.enabled = true;
+  sync.code = code;
+  sync.hash = ctx.hash;
+  sync.db = (ctx.mod && ctx.mod.db) ? ctx.mod.db : null;
+  syncWriteStore({ enabled: true, code: code, hash: ctx.hash, connectedAt: Date.now() });
+  if(ctx.mod && ctx.mod.fs) syncSubscribe(ctx);
+  sync.lastSyncAt = Date.now();
+  syncSetStatus('live');
+  syncMsg(note + ' · ' + syncClock());
+  syncUpdateUI();
+  syncCloseSheet();
+  toast('부부 실시간 동기화를 켰어요');
+}
+function syncSubscribe(ctx){
+  if(sync.unsub){ try{ sync.unsub(); }catch(err){} sync.unsub = null; }
+  sync.unsub = ctx.mod.fs.onSnapshot(ctx.ref, { includeMetadataChanges: true }, function(snap){
+    if(!snap.exists()) return;
+    var d = snap.data() || {};
+    var mine = !!d.clientId && d.clientId === sync.clientId;
+    if(d.state && !mine && syncFingerprint(d.state) !== syncFingerprint(state)){
+      syncApplyRemote(d.state);
+      sync.lastSyncAt = syncTime(d.updatedAt) || Date.now();
+      syncMsg('상대방이 고친 내용을 반영했어요 · ' + syncClock());
+      toast('상대방이 고친 내용을 불러왔어요');
+    } else if(d.updatedAt){
+      sync.lastSyncAt = syncTime(d.updatedAt) || sync.lastSyncAt;
+    }
+    if(sync.status !== 'error'){
+      syncSetStatus(snap.metadata && snap.metadata.fromCache ? 'waiting' : 'live');
+    }
+    syncUpdateUI();
+  }, function(err){
+    if(!sync.unsub) return;
+    syncSetStatus('error');
+    syncMsg('실시간 연결이 끊겼어요 · ' + syncErrText(err));
+  });
+}
+function syncConnect(codeInput){
+  var code = String(codeInput == null ? ((($('sync-code') || {}).value) || '') : codeInput).trim();
+  if(syncNormalizeCode(code).length < SYNC_MIN_CODE){
+    syncMsg('방 코드를 6자 이상으로 정해 주세요.');
+    var ci = $('sync-code');
+    if(ci) ci.focus();
+    return;
+  }
+  syncCloseMerge();
+  sync.pending = null;
+  syncSetStatus('connecting');
+  syncMsg('Firebase에 연결하는 중이에요…');
+  syncTimeout(syncLoadFirebase(), SYNC_NET_MS, 'timeout-sdk')
+    .then(function(mod){
+      return syncRoomHash(code).then(function(hash){
+        var ref = mod.fs.doc(mod.db, 'households', hash);
+        return syncTimeout(mod.fs.getDoc(ref), SYNC_NET_MS, 'timeout-server').then(function(snap){
+          return { mod: mod, hash: hash, ref: ref, snap: snap };
+        });
+      });
+    })
+    .then(function(ctx){
+      var serverState = null, serverAt = null;
+      if(ctx.snap.exists()){
+        var d = ctx.snap.data() || {};
+        if(d.state && typeof d.state === 'object'){
+          serverState = d.state;
+          serverAt = syncTime(d.updatedAt);
+        }
+      }
+      if(!serverState){
+        return syncPushRoom(ctx, true).then(function(){
+          syncBegin(ctx, code, syncHasData(state) ? '이 폰 가계부를 방에 올렸어요' : '새 방을 만들었어요');
+        });
+      }
+      if(syncFingerprint(serverState) === syncFingerprint(state)){
+        syncBegin(ctx, code, '이미 같은 내용이에요 · 실시간으로 이어집니다');
+        return;
+      }
+      if(!syncHasData(state)){
+        syncApplyRemote(serverState);
+        syncBegin(ctx, code, '방에 있던 가계부를 이 폰으로 불러왔어요');
+        return;
+      }
+      syncShowMerge(ctx, code, serverState, serverAt);
+    })
+    .catch(function(err){
+      syncSetStatus(sync.enabled ? 'waiting' : 'error');
+      syncMsg('연결하지 못했어요 · ' + syncErrText(err));
+      var ci2 = $('sync-code');
+      if(ci2 && !ci2.value) ci2.value = code;
+      syncOpenSheet();
+    });
+}
+function syncDisconnect(){
+  if(sync.unsub){ try{ sync.unsub(); }catch(err){} sync.unsub = null; }
+  if(sync.pushTimer){ clearTimeout(sync.pushTimer); sync.pushTimer = null; }
+  sync.enabled = false;
+  sync.hash = '';
+  sync.db = null;
+  sync.pending = null;
+  syncCloseMerge();
+  syncWriteStore({ enabled: false });
+  syncSetStatus('off');
+  syncMsg('연결을 끊었어요. 이제 이 기기에만 저장합니다.');
+  syncUpdateUI();
+  toast('실시간 동기화를 껐어요');
+}
+function syncRetry(){
+  var code = sync.code || ((($('sync-code') || {}).value) || '');
+  if(!code) return;
+  syncConnect(code);
+}
+
+/* ---- 시작 · 이벤트 ---- */
+function syncInit(){
+  sync.clientId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  var store = syncReadStore();
+  if(store.code) sync.code = String(store.code);
+  if(store.hash) sync.hash = String(store.hash);
+  if(store.enabled) sync.enabled = true;
+  syncUpdateUI();
+  syncWire();
+  if(sync.enabled && sync.code){
+    var ci = $('sync-code');
+    if(ci) ci.value = sync.code;
+    if(navigator.onLine === false){
+      syncSetStatus('waiting');
+      syncMsg('오프라인이에요. 연결되면 자동으로 다시 이어 갈게요.');
+    }else{
+      syncConnect(sync.code);
+    }
+  }
+}
+function syncWire(){
+  var chip = $('sync-chip');
+  if(chip) chip.addEventListener('click', syncOpenSheet);
+  var cardBtn = $('sync-card-btn');
+  if(cardBtn) cardBtn.addEventListener('click', syncOpenSheet);
+  var close = $('sync-close');
+  if(close) close.addEventListener('click', syncCloseSheet);
+  var backdrop = $('sync-backdrop');
+  if(backdrop) backdrop.addEventListener('click', syncCloseSheet);
+  var connect = $('sync-connect-btn');
+  if(connect) connect.addEventListener('click', function(){
+    if(sync.enabled) syncRetry();
+    else syncConnect();
+  });
+  var codeEl = $('sync-code');
+  if(codeEl){
+    codeEl.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ e.preventDefault(); syncConnect(); }
+    });
+  }
+  var disc = $('sync-disconnect-btn');
+  if(disc) disc.addEventListener('click', function(){
+    if(window.confirm('실시간 동기화를 끊을까요?\n이 폰의 가계부는 그대로 남고, 방에는 마지막 내용이 저장되어 있어요.')) syncDisconnect();
+  });
+  var pickS = $('sync-merge-server');
+  if(pickS) pickS.addEventListener('click', syncPickServer);
+  var pickL = $('sync-merge-local');
+  if(pickL) pickL.addEventListener('click', syncPickLocal);
+  var pickN = $('sync-merge-later');
+  if(pickN) pickN.addEventListener('click', syncPickLater);
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') syncCloseSheet();
+  });
+  window.addEventListener('online', function(){
+    if(sync.enabled && !sync.unsub) syncRetry();
+    else if(sync.enabled && sync.db) syncSetStatus('live');
+  });
+  window.addEventListener('offline', function(){
+    if(sync.enabled) syncSetStatus('waiting');
+  });
+}
+
+/* 테스트용 최소 노출 (검증 스크립트에서 해시·병합 로직 확인) */
+window.__hbSync = {
+  normalize: syncNormalizeCode,
+  hash: syncRoomHash,
+  sha256: sha256Hex,
+  fingerprint: syncFingerprint,
+  hasData: syncHasData,
+  summary: syncSummary,
+  status: function(){ return sync.status; },
+  state: function(){ return state; },
+  showMerge: function(serverState, serverAt){ syncShowMerge({ mod: null, hash: 'test', ref: null }, 'test-room', serverState, serverAt || Date.now()); },
+  applyRemote: syncApplyRemote,
+  minCode: SYNC_MIN_CODE
+};
+
+/* =========================================================
    시작
    ========================================================= */
 function init(){
@@ -2480,6 +3139,7 @@ function init(){
   }
   renderAll();
   wire();
+  syncInit();
   switchTab('home');
 }
 
