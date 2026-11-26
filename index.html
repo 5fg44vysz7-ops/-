@@ -146,6 +146,24 @@ main{padding:0 16px;display:flex;flex-direction:column;gap:12px}
 .round span{display:block;font-size:9.5px;color:#9aa3ad;font-weight:500;margin-top:1px}
 .round.done{background:var(--blue-weak);border-color:#bfd8ff;color:#1b64da;font-weight:800}
 .round.done span{color:#7aa8ef}
+/* 회수금 — 실제 받은 금액 기록 */
+.rec-sub{margin:8px 0 0;font-size:11.5px;color:#8b95a1}
+.rec-form{margin-top:14px;border-top:1px solid var(--line);padding-top:13px}
+.rec-form-title{margin:0 0 9px;font-size:12.5px;font-weight:700;color:#4e5968;letter-spacing:-.2px}
+.rec-form .field.amount{padding:12px 14px}
+.rec-form .field.amount input{font-size:21px}
+.rec-form .f-label{width:44px}
+.rec-hint{margin:-2px 0 8px;font-size:11.5px;color:#8b95a1}
+.rec-hint b{color:#4e5968}
+#loan-rec-quick{margin:0 0 8px}
+#loan-rec-list{margin-top:14px}
+#loan-rec-list .tx-title{font-variant-numeric:tabular-nums;font-size:14px;font-weight:700}
+.loan-mg-panel .field{background:#f7f8fa}
+.plan-toggle{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:0;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.plan-toggle-title{font-size:12.5px;font-weight:700;color:#4e5968;letter-spacing:-.2px;flex:0 0 auto}
+.plan-toggle-sum{flex:1;min-width:0;font-size:11.5px;color:#8b95a1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.plan-toggle-act{font-size:11.5px;font-weight:700;color:var(--blue);flex:0 0 auto}
+#loan-plan-fields{margin-top:10px}
 
 /* ---------- detail lists ---------- */
 .owner-head{display:flex;align-items:center;gap:8px;margin:18px 0 10px}
@@ -547,19 +565,41 @@ input::placeholder,textarea::placeholder{color:#9aa3ad}
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="loan-card">
         <div class="card-head"><h3 class="card-title" id="loan-card-title">회수금</h3><span class="badge" id="loan-badge">회수 계획</span></div>
         <div class="loan-hero"><strong id="loan-recovered">0원</strong><span id="loan-total-label">/ 0원</span></div>
         <div class="progress"><span id="loan-bar" style="width:0%"></span></div>
-        <div class="loan-meta"><span id="loan-rounds">0 / 0회 완료</span><span id="loan-remain">남은 0원</span></div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
-          <div class="field"><span class="f-label">총액</span><input id="loan-in-total" inputmode="numeric" aria-label="회수 총액"><span class="unit">원</span></div>
-          <div class="field"><span class="f-label">월 회수액</span><input id="loan-in-monthly" inputmode="numeric" aria-label="월 회수액"><span class="unit">원</span></div>
-          <div class="field"><span class="f-label">회차 수</span><input id="loan-in-rounds" inputmode="numeric" aria-label="회차 수"><span class="unit">회</span></div>
-          <div class="field date"><span class="f-label">시작 월</span><input type="month" id="loan-start" aria-label="회수 시작 월"></div>
+        <div class="loan-meta"><span id="loan-rounds">0회 기록</span><span id="loan-remain">남은 0원</span></div>
+        <p class="rec-sub" id="loan-this-month">이번 달 받은 금액 0원</p>
+
+        <div class="rec-form" id="loan-rec-form">
+          <p class="rec-form-title">받은 금액 기록하기</p>
+          <div class="field amount">
+            <input id="loan-rec-amount" inputmode="numeric" placeholder="0" aria-label="받은 금액">
+            <span class="unit">원</span>
+          </div>
+          <p class="rec-hint" id="loan-rec-amount-hint">받은 금액을 원 단위로 입력해 주세요</p>
+          <div class="chip-row" id="loan-rec-quick" hidden></div>
+          <div class="field date"><span class="f-label">받은 날</span><input type="date" id="loan-rec-date" aria-label="받은 날짜"></div>
+          <div class="field"><input id="loan-rec-memo" maxlength="30" placeholder="메모 (선택) · 예: 11월분" aria-label="회수 메모"></div>
+          <button class="btn primary block" id="loan-rec-add">+ 회수 기록</button>
         </div>
-        <div class="rounds" id="loan-rounds-grid"></div>
-        <p class="hint small" id="loan-hint" style="margin-top:12px">회차를 누르면 회수 완료로 표시돼요. 월 <b id="loan-monthly-label">0원</b>씩 <b id="loan-rounds-label">0개월</b>이면 <b id="loan-total-sum">0원</b>, <b id="loan-start-label">—</b>에 시작하면 <b id="loan-end">—</b>에 마무리돼요.</p>
+
+        <ul class="tx-list" id="loan-rec-list"></ul>
+
+        <div class="mg-panel">
+          <button class="plan-toggle" id="loan-plan-toggle" aria-expanded="false" aria-controls="loan-plan-fields">
+            <span class="plan-toggle-title">회수 계획</span>
+            <span class="plan-toggle-sum" id="loan-plan-sum"></span>
+            <span class="plan-toggle-act" id="loan-plan-act">수정</span>
+          </button>
+          <div id="loan-plan-fields" hidden>
+            <div class="field"><span class="f-label">총액</span><input id="loan-in-total" inputmode="numeric" aria-label="회수 총액"><span class="unit">원</span></div>
+            <div class="field"><span class="f-label">월 회수액</span><input id="loan-in-monthly" inputmode="numeric" aria-label="월 회수액"><span class="unit">원</span></div>
+            <div class="field date"><span class="f-label">시작 월</span><input type="month" id="loan-start" aria-label="회수 시작 월"></div>
+          </div>
+          <p class="hint small" id="loan-hint" style="margin-top:4px">월 <b id="loan-monthly-label">0원</b>씩 받으면 <b id="loan-rounds-label">0회</b>, <b id="loan-start-label">—</b>에 시작하면 <b id="loan-end">—</b>에 마무리돼요. 실제 받은 금액이 다르면 위에서 그대로 기록하세요.</p>
+        </div>
       </div>
     </section>
 
@@ -807,7 +847,7 @@ var DEFAULT_STATE = {
   loan: {
     name: '회수금', total: 0, monthly: 0, rounds: 12, memo: '',
     start: (function(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); })(),
-    paid: []
+    paid: [], records: []
   },
   mortgage: clone(MG_DEFAULTS),
   extraLoans: [],
@@ -850,6 +890,29 @@ function loadState(){
       base.loan.memo = String(ln.memo == null ? base.loan.memo : ln.memo).slice(0, 20);
       base.loan.start = /^\d{4}-\d{2}$/.test(ln.start) ? ln.start : base.loan.start;
       base.loan.paid = Array.isArray(ln.paid) ? ln.paid.map(Number).filter(function(n){ return n >= 1 && n <= base.loan.rounds; }) : [];
+      /* 회수 기록(records): 실제로 받은 금액 배열. 예전 '회차 체크(paid)'만 있던 데이터는
+         회차 × 월 회수액 기록으로 옮겨 와서 내역이 비지 않게 한다(금액·날짜는 나중에 고칠 수 있다). */
+      if(Array.isArray(ln.records)){
+        base.loan.records = ln.records.filter(function(r){ return r && typeof r === 'object'; }).map(function(r, i){
+          return {
+            id: String(r.id || 'l' + (i + 1)),
+            date: /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : '',
+            amount: Math.max(0, Math.round(num(r.amount))),
+            memo: String(r.memo == null ? '' : r.memo).slice(0, 30)
+          };
+        }).filter(function(r){ return r.amount > 0; });
+      }else{
+        base.loan.records = base.loan.paid.map(function(no){
+          return {
+            id: 'l' + no,
+            date: addMonths(base.loan.start, no - 1) + '-01',
+            amount: Math.max(0, Math.round(num(base.loan.monthly))),
+            memo: no + '회차 (기존 기록)'
+          };
+        }).filter(function(r){ return r.amount > 0; });
+      }
+      /* 예전 버전 앱(회차 체크)과 같은 방을 함께 쓸 때도 진행률이 남도록 paid를 기록 수에 맞춰 둔다 */
+      base.loan.paid = base.loan.records.map(function(r, i){ return i + 1; });
     }
     if(s.mortgage && typeof s.mortgage === 'object'){
       var mg = s.mortgage;
@@ -1322,37 +1385,190 @@ function renderTransfers(){
 }
 
 /* =========================================================
-   회수금 트래커
+   회수금 트래커 (실제 받은 금액 기록)
    ========================================================= */
-function renderLoan(){
-  var grid = $('loan-rounds-grid');
-  if(!grid) return;
-  var paid = state.loan.paid || [];
-  var start = state.loan.start || '2026-12';
-  var rounds = Math.max(1, Math.min(120, Math.round(num(state.loan.rounds) || 12)));
-  var monthly = Math.max(0, num(state.loan.monthly));
+var loanEditId = null;
+
+function loanRecords(){ return Array.isArray(state.loan.records) ? state.loan.records : []; }
+function loanSum(){
+  return loanRecords().reduce(function(a, r){ return a + Math.max(0, num(r.amount)); }, 0);
+}
+/* 계획: 총액을 월 회수액으로 나눠 예정 회차를 구한다(월 회수액이 없으면 저장된 회차 수) */
+function loanPlanRounds(){
   var total = Math.max(0, num(state.loan.total));
-  setText('loan-card-title', state.loan.name || '회수금');
-  setText('mini-loan-label', state.loan.name || '회수금');
+  var monthly = Math.max(0, num(state.loan.monthly));
+  if(monthly > 0 && total > 0) return Math.max(1, Math.min(120, Math.ceil(total / monthly)));
+  return Math.max(1, Math.min(120, Math.round(num(state.loan.rounds) || 12)));
+}
+function loanRecordsSorted(){
+  return loanRecords().slice().sort(function(a, b){
+    var d = String(b.date || '').localeCompare(String(a.date || ''));
+    if(d !== 0) return d;
+    return String(b.id).localeCompare(String(a.id));
+  });
+}
+/* 입력창 기본 금액: 지난번에 받은 금액 → 없으면 회수 계획의 월 회수액 */
+function loanDefaultAmount(){
+  var monthly = Math.max(0, Math.round(num(state.loan.monthly)));
+  var rows = loanRecordsSorted();
+  if(rows.length){
+    var last = Math.max(0, Math.round(num(rows[0].amount)));
+    if(last > 0) return last;
+  }
+  return monthly;
+}
+function loanAmountHint(v){
+  var n = Math.round(num(v));
+  if(!n) return '받은 금액을 원 단위로 입력해 주세요';
+  return fmt(n) + '원 = ' + manwon(n);
+}
+/* 예전 '회차 체크' 방식과 같은 방을 쓰는 폰이 있어도 어긋나지 않게 paid를 기록 수에 맞춘다 */
+function mirrorLoanPaid(){
+  state.loan.paid = loanRecords().map(function(r, i){ return i + 1; });
+}
+
+function renderLoan(){
+  renderLoanPlan();
+  var dateEl = $('loan-rec-date');
+  if(dateEl && !dateEl.value) dateEl.value = todayISO();
+  var amtEl = $('loan-rec-amount');
+  if(amtEl && document.activeElement !== amtEl && !amtEl.value){
+    var d = loanDefaultAmount();
+    amtEl.value = d ? fmt(d) : '';
+  }
+  var hintEl = $('loan-rec-amount-hint');
+  if(hintEl && amtEl) setText('loan-rec-amount-hint', loanAmountHint(amtEl.value.replace(/[^0-9]/g, '')));
+  renderLoanRecords();
+}
+
+/* 계획(제목·총액·월 회수액·시작 월)만 다시 그린다. 기록 목록은 건드리지 않아서
+   금액 입력칸에서 포커스가 빠지는 순간 목록을 다시 그려 누를 항목이 바뀌는 일이 없다. */
+function renderLoanPlan(){
+  var name = state.loan.name || '회수금';
+  setText('loan-card-title', name);
+  setText('mini-loan-label', name);
   setText('loan-badge', state.loan.memo || '회수 계획');
+  var total = Math.max(0, num(state.loan.total));
+  var monthly = Math.max(0, num(state.loan.monthly));
   setText('loan-total-label', '/ ' + manwon(total));
-  grid.innerHTML = Array.from({length: rounds}, function(_, i){
-    var no = i + 1;
-    var on = paid.indexOf(no) >= 0;
-    return '<button class="round' + (on ? ' done' : '') + '" data-round="' + no + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
-      no + '회차<span>' + ymLabel(addMonths(start, i), true) + '</span></button>';
-  }).join('');
   var startInput = $('loan-start');
-  if(startInput && document.activeElement !== startInput) startInput.value = start;
-  var tIn = $('loan-in-total'), mIn = $('loan-in-monthly'), rIn = $('loan-in-rounds');
+  if(startInput && document.activeElement !== startInput) startInput.value = state.loan.start || '';
+  var tIn = $('loan-in-total'), mIn = $('loan-in-monthly');
   if(tIn && document.activeElement !== tIn) tIn.value = fmt(total);
   if(mIn && document.activeElement !== mIn) mIn.value = fmt(monthly);
-  if(rIn && document.activeElement !== rIn) rIn.value = String(rounds);
-  setText('loan-end', ymLabel(addMonths(start, rounds - 1)));
-  setText('loan-start-label', ymLabel(start));
-  setText('loan-monthly-label', manwon(monthly));
-  setText('loan-rounds-label', rounds + '개월');
-  setText('loan-total-sum', manwon(monthly * rounds));
+  var planRounds = loanPlanRounds();
+  var startLabel = ymLabel(state.loan.start) || '—';
+  var endLabel = ymLabel(addMonths(state.loan.start || '2026-12', planRounds - 1)) || '—';
+  var hintBox = $('loan-hint');
+  if(hintBox){
+    if(monthly > 0 && total > 0){
+      hintBox.innerHTML = '월 <b id="loan-monthly-label">' + manwon(monthly) + '</b>씩 받으면 <b id="loan-rounds-label">' + planRounds + '회</b>, <b id="loan-start-label">' + startLabel + '</b>에 시작해 <b id="loan-end">' + endLabel + '</b>에 마무리돼요. 실제 받은 금액이 다르면 위에서 그대로 기록하세요.';
+    }else{
+      hintBox.innerHTML = '월 <b id="loan-monthly-label">' + manwon(monthly) + '</b>씩 받으면 <b id="loan-rounds-label">—</b>, <b id="loan-start-label">' + startLabel + '</b>에 시작해 <b id="loan-end">—</b>에 마무리돼요. 회수 계획에서 총액·월 회수액을 정하면 예정 회차가 자동으로 계산돼요.';
+    }
+  }
+  setText('loan-plan-sum', '총액 ' + manwon(total) + ' · 월 ' + manwon(monthly) + ' · ' + startLabel);
+}
+
+function renderLoanRecords(){
+  var list = $('loan-rec-list');
+  if(!list) return;
+  var rows = loanRecordsSorted();
+  if(!rows.length){
+    loanEditId = null;
+    list.innerHTML = '<li class="empty">아직 회수 기록이 없어요. 위에 실제로 받은 금액을 넣어 보세요.</li>';
+  }else{
+    list.innerHTML = rows.map(function(r){
+      if(loanEditId === r.id) return loanRecordEditorHTML(r);
+      var sub = [r.date || '날짜 없음', r.memo].filter(function(x){ return x; }).join(' · ');
+      return '<li class="tx-item">' +
+        '<button class="tx-open" data-loan-edit="' + esc(r.id) + '" aria-label="' + esc(won(r.amount)) + ' 회수 기록 수정">' +
+          '<span class="tx-main"><span class="tx-title">' + esc(won(r.amount)) + '</span>' +
+          '<span class="tx-date">' + esc(sub) + '</span></span>' +
+        '</button>' +
+        '<button class="tx-del" data-loan-del="' + esc(r.id) + '" aria-label="삭제">✕</button>' +
+      '</li>';
+    }).join('');
+  }
+  renderLoanQuick();
+}
+
+function loanRecordEditorHTML(r){
+  return '<li class="tx-item editing">' +
+    '<div class="tx-editor">' +
+      '<div class="field amount"><input class="loan-edit-amount" value="' + fmt(r.amount) + '" inputmode="numeric" aria-label="받은 금액"><span class="unit">원</span></div>' +
+      '<div class="field date"><input type="date" class="loan-edit-date" value="' + esc(r.date || '') + '" aria-label="받은 날짜"></div>' +
+      '<div class="field"><input class="loan-edit-memo" maxlength="30" value="' + esc(r.memo) + '" placeholder="메모 (선택)" aria-label="메모"></div>' +
+      '<div class="row gap">' +
+        '<button class="btn primary small" data-loan-save="' + esc(r.id) + '">저장</button>' +
+        '<button class="btn ghost small" data-loan-cancel="1">취소</button>' +
+        '<button class="btn ghost small" data-loan-del="' + esc(r.id) + '">삭제</button>' +
+      '</div>' +
+    '</div>' +
+  '</li>';
+}
+
+/* 빠른 금액: 최근에 받은 금액 + 계획의 월 회수액 */
+function renderLoanQuick(){
+  var box = $('loan-rec-quick');
+  if(!box) return;
+  var amounts = [];
+  var monthly = Math.round(Math.max(0, num(state.loan.monthly)));
+  if(monthly > 0) amounts.push(monthly);
+  loanRecordsSorted().forEach(function(r){
+    var a = Math.round(num(r.amount));
+    if(a > 0 && amounts.indexOf(a) < 0) amounts.push(a);
+  });
+  amounts = amounts.slice(0, 4);
+  box.innerHTML = amounts.map(function(a){
+    return '<button class="chip" data-loan-quick="' + a + '">' + manwon(a) + '</button>';
+  }).join('');
+  box.hidden = !amounts.length;
+}
+
+function addLoanRecord(){
+  var amtEl = $('loan-rec-amount'), dateEl = $('loan-rec-date'), memoEl = $('loan-rec-memo');
+  var amount = amtEl ? Number(amtEl.value.replace(/[^0-9]/g, '')) : 0;
+  if(!amount){ toast('받은 금액을 입력해 주세요'); if(amtEl) amtEl.focus(); return; }
+  var date = (dateEl && dateEl.value) ? dateEl.value : todayISO();
+  var memo = memoEl ? memoEl.value.trim().slice(0, 30) : '';
+  state.loan.records = loanRecords();
+  state.loan.records.push({id: uid(), date: date, amount: amount, memo: memo});
+  mirrorLoanPaid();
+  saveState();
+  if(memoEl) memoEl.value = '';
+  renderLoan();
+  updateSummaries();
+  toast(manwon(amount) + ' 회수 기록을 추가했어요');
+}
+
+function saveLoanRecord(id){
+  var row = loanRecords().filter(function(r){ return r.id === id; })[0];
+  if(!row) return;
+  var amtEl = document.querySelector('#loan-rec-list .loan-edit-amount');
+  var dateEl = document.querySelector('#loan-rec-list .loan-edit-date');
+  var memoEl = document.querySelector('#loan-rec-list .loan-edit-memo');
+  var amount = amtEl ? Number(amtEl.value.replace(/[^0-9]/g, '')) : 0;
+  if(!amount){ toast('받은 금액을 입력해 주세요'); if(amtEl) amtEl.focus(); return; }
+  row.amount = amount;
+  row.date = (dateEl && dateEl.value) ? dateEl.value : (row.date || todayISO());
+  row.memo = memoEl ? memoEl.value.trim().slice(0, 30) : '';
+  loanEditId = null;
+  saveState();
+  renderLoan();
+  updateSummaries();
+  toast('회수 기록을 고쳤어요');
+}
+
+function deleteLoanRecord(id){
+  if(!window.confirm('이 회수 기록을 지울까요?')) return;
+  state.loan.records = loanRecords().filter(function(r){ return r.id !== id; });
+  mirrorLoanPaid();
+  if(loanEditId === id) loanEditId = null;
+  saveState();
+  renderLoan();
+  updateSummaries();
+  toast('삭제했어요');
 }
 
 /* =========================================================
@@ -1660,18 +1876,24 @@ function updateSummaries(){
   setText('transfer-progress', done.length + ' / ' + state.transfers.length + ' 완료');
   setText('transfer-amt', '완료 ' + won(doneAmt));
 
-  var loanRounds = Math.max(1, Math.min(120, Math.round(num(state.loan.rounds) || 12)));
-  var loanMonthly = Math.max(0, num(state.loan.monthly));
+  /* 회수금: 실제 받은 금액 합계 기준 */
   var loanTotal = Math.max(0, num(state.loan.total));
-  var paidCount = (state.loan.paid || []).length;
-  var recovered = paidCount * loanMonthly;
-  setText('mini-loan', Math.round(paidCount / loanRounds * 100) + '%');
-  setText('mini-loan-amt', won(recovered) + ' 회수');
+  var loanRows = loanRecords();
+  var recovered = loanSum();
+  var loanPct = loanTotal > 0 ? Math.round(recovered / loanTotal * 100) : 0;
+  setText('mini-loan', Math.min(100, loanPct) + '%');
+  setText('mini-loan-amt', manwon(recovered) + ' 회수');
   setText('loan-recovered', manwon(recovered));
-  setText('loan-rounds', paidCount + ' / ' + loanRounds + '회 완료');
-  setText('loan-remain', '남은 ' + manwon(Math.max(0, loanTotal - recovered)));
+  setText('loan-rounds', loanRows.length + '회 기록');
+  setText('loan-remain', loanTotal > 0
+    ? (recovered > loanTotal ? '초과 ' + manwon(recovered - loanTotal) : '남은 ' + manwon(loanTotal - recovered))
+    : (recovered > 0 ? '목표 미설정' : '남은 0원'));
+  var thisYm = todayISO().slice(0, 7);
+  var thisMonthRows = loanRows.filter(function(r){ return String(r.date || '').slice(0, 7) === thisYm; });
+  var thisMonthSum = thisMonthRows.reduce(function(a, r){ return a + Math.max(0, num(r.amount)); }, 0);
+  setText('loan-this-month', '이번 달(' + Number(thisYm.slice(5, 7)) + '월) 받은 금액 ' + won(thisMonthSum) + (thisMonthRows.length > 1 ? ' · ' + thisMonthRows.length + '건' : ''));
   var bar = $('loan-bar');
-  if(bar) bar.style.width = (paidCount / loanRounds * 100) + '%';
+  if(bar) bar.style.width = Math.max(0, Math.min(100, loanPct)) + '%';
 
   var banner = $('setup-banner');
   if(banner) banner.hidden = !(sv === 0 && fx === 0 && vr === 0 && !state.expenses.length && !state.incomes.length);
@@ -1987,6 +2209,11 @@ function importDataText(text, fileName){
     return false;
   }
   state = loadState();
+  loanEditId = null;
+  var recAmtEl = $('loan-rec-amount');
+  if(recAmtEl) recAmtEl.value = '';
+  var recDateEl = $('loan-rec-date');
+  if(recDateEl) recDateEl.value = todayISO();
   renderAll();
   switchTab('home');
   closeIncomeForm();
@@ -2257,20 +2484,60 @@ function wire(){
     });
   }
 
-  // 회수금
-  var grid = $('loan-rounds-grid');
-  if(grid){
-    grid.addEventListener('click', function(e){
-      var btn = e.target.closest ? e.target.closest('[data-round]') : null;
-      if(!btn) return;
-      var no = Number(btn.getAttribute('data-round'));
-      var idx = state.loan.paid.indexOf(no);
-      if(idx >= 0) state.loan.paid.splice(idx, 1);
-      else state.loan.paid.push(no);
-      state.loan.paid.sort(function(a, b){ return a - b; });
-      saveState();
-      renderLoan();
-      updateSummaries();
+  // 회수금 — 실제 받은 금액 기록(추가·수정·삭제)
+  var recList = $('loan-rec-list');
+  if(recList){
+    recList.addEventListener('click', function(e){
+      var del = e.target.closest ? e.target.closest('[data-loan-del]') : null;
+      if(del){ deleteLoanRecord(del.getAttribute('data-loan-del')); return; }
+      var cancel = e.target.closest ? e.target.closest('[data-loan-cancel]') : null;
+      if(cancel){ loanEditId = null; renderLoanRecords(); return; }
+      var save = e.target.closest ? e.target.closest('[data-loan-save]') : null;
+      if(save){ saveLoanRecord(save.getAttribute('data-loan-save')); return; }
+      var edit = e.target.closest ? e.target.closest('[data-loan-edit]') : null;
+      if(edit){
+        loanEditId = edit.getAttribute('data-loan-edit');
+        renderLoanRecords();
+        var box = document.querySelector('#loan-rec-list .tx-item.editing');
+        if(box){ try{ box.scrollIntoView({block: 'nearest', behavior: 'smooth'}); }catch(err){} }
+      }
+    });
+    recList.addEventListener('input', function(e){
+      var el = e.target.closest ? e.target.closest('.loan-edit-amount') : null;
+      if(!el) return;
+      var digits = el.value.replace(/[^0-9]/g, '');
+      el.value = digits ? Number(digits).toLocaleString('ko-KR') : '';
+    });
+  }
+  var recAmt = $('loan-rec-amount');
+  if(recAmt){
+    recAmt.addEventListener('input', function(){
+      var digits = recAmt.value.replace(/[^0-9]/g, '');
+      recAmt.value = digits ? Number(digits).toLocaleString('ko-KR') : '';
+      setText('loan-rec-amount-hint', loanAmountHint(digits));
+    });
+  }
+  var recQuick = $('loan-rec-quick');
+  if(recQuick){
+    recQuick.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('[data-loan-quick]') : null;
+      if(!b) return;
+      var v = Number(b.getAttribute('data-loan-quick')) || 0;
+      if(recAmt){
+        recAmt.value = v ? fmt(v) : '';
+        setText('loan-rec-amount-hint', loanAmountHint(v));
+      }
+    });
+  }
+  var recAdd = $('loan-rec-add');
+  if(recAdd) recAdd.addEventListener('click', addLoanRecord);
+  var planToggle = $('loan-plan-toggle'), planFields = $('loan-plan-fields');
+  if(planToggle && planFields){
+    planToggle.addEventListener('click', function(){
+      var open = planFields.hidden;
+      planFields.hidden = !open;
+      planToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      setText('loan-plan-act', open ? '접기' : '수정');
     });
   }
   var loanStart = $('loan-start');
@@ -2284,7 +2551,7 @@ function wire(){
       }
       state.loan.start = v;
       saveState();
-      renderLoan();
+      renderLoanPlan();
       toast('회차 일정을 다시 계산했어요');
     });
   }
@@ -2297,22 +2564,12 @@ function wire(){
     });
     el.addEventListener('change', function(){
       state.loan[pair[1]] = Math.max(0, Number(el.value.replace(/[^0-9]/g, '') || 0));
+      state.loan.rounds = loanPlanRounds();
       saveState();
-      renderLoan();
+      renderLoanPlan();
       updateSummaries();
     });
   });
-  var loanRoundsIn = $('loan-in-rounds');
-  if(loanRoundsIn){
-    loanRoundsIn.addEventListener('change', function(){
-      var n = Math.max(1, Math.min(120, Math.round(Number(loanRoundsIn.value.replace(/[^0-9]/g, '') || 1))));
-      state.loan.rounds = n;
-      state.loan.paid = (state.loan.paid || []).filter(function(x){ return x <= n; });
-      saveState();
-      renderLoan();
-      updateSummaries();
-    });
-  }
 
   /* ---------- 가계부 데이터 파일 ---------- */
   var importer = $('data-import');
@@ -2359,6 +2616,7 @@ function wire(){
     aReset.addEventListener('click', function(){
       if(!window.confirm('입력한 모든 내용을 지우고 처음 상태로 돌아갈까요?')) return;
       state = clone(DEFAULT_STATE);
+      loanEditId = null;
       saveState();
       renderAll();
       switchTab('home');
@@ -2693,7 +2951,7 @@ function syncFingerprint(s){
     savings: (s.savings || []).map(function(x){ return [String(x.id || ''), String(x.owner || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; }),
     fixed: (s.fixed || []).map(function(x){ return [String(x.id || ''), String(x.name || ''), amt(x.amount), String(x.memo || '')]; }),
     transfers: (s.transfers || []).map(function(t){ return [String(t.id || ''), String(t.day || ''), String(t.bank || ''), String(t.owner || ''), String(t.name || ''), amt(t.amount), !!t.done]; }),
-    loan: s.loan ? [String(s.loan.name || ''), amt(s.loan.total), amt(s.loan.monthly), amt(s.loan.rounds), String(s.loan.start || ''), String(s.loan.memo || ''), (s.loan.paid || []).map(Number).sort(function(a, b){ return a - b; })] : null,
+    loan: s.loan ? [String(s.loan.name || ''), amt(s.loan.total), amt(s.loan.monthly), amt(s.loan.rounds), String(s.loan.start || ''), String(s.loan.memo || ''), (s.loan.paid || []).map(Number).sort(function(a, b){ return a - b; }), (s.loan.records || []).map(function(r){ return [String(r.id || ''), String(r.date || ''), amt(r.amount), String(r.memo || '')]; })] : null,
     mortgage: s.mortgage ? [String(s.mortgage.name || ''), amt(s.mortgage.principal), Math.round(num(s.mortgage.rate) * 100) / 100, String(s.mortgage.method || ''), amt(s.mortgage.months), String(s.mortgage.start || '')] : null,
     extraLoans: (s.extraLoans || []).map(function(e){ return [String(e.id || ''), String(e.name || ''), amt(e.amount), String(e.memo || '')]; }),
     barn: amt(s.barn),
@@ -2711,6 +2969,7 @@ function syncHasData(s){
   if((s.fixed || []).some(function(x){ return num(x.amount) > 0; })) return true;
   if(num(s.barn) > 0) return true;
   if(s.loan && num(s.loan.total) > 0) return true;
+  if(s.loan && (s.loan.records || []).length) return true;
   if(s.mortgage && num(s.mortgage.principal) > 0) return true;
   return false;
 }
