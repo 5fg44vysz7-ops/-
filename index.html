@@ -1928,6 +1928,12 @@ function updateSummaries(){
     var el = $(id);
     if(el) el.hidden = emptyIncome;
   });
+  /* 아직 아무것도 없는 처음 상태에서는 0원 타일을 감춰 첫 화면을 더 단순하게 */
+  var pristine = sv === 0 && fx === 0 && vr === 0 && !state.expenses.length && !state.incomes.length;
+  var moneyGrid = document.querySelector('.money-grid');
+  if(moneyGrid) moneyGrid.hidden = pristine;
+  var heroTop = document.querySelector('.hero-top');
+  if(heroTop) heroTop.hidden = pristine;
   setText('spare-label', emptyIncome ? '이번 달 생활비' : '고정·저축 빼고 남은 돈');
   setText('spare-badge', emptyIncome ? '입금 없음' : '이번 달');
   if(spareCard){
